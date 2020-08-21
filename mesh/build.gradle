@@ -52,7 +52,11 @@ android {
     }
 
     testOptions {
-        unitTests.returnDefaultValues = true
+        unitTests {
+            all {
+                exclude 'no/nordicsemi/**'
+            }
+        }
     }
 }
 
