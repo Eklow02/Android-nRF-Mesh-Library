@@ -2,12 +2,13 @@ package no.nordicsemi.android.mesh.transport;
 
 import android.util.Log;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
 import no.nordicsemi.android.mesh.Group;
 import no.nordicsemi.android.mesh.MeshManagerApi;
 import no.nordicsemi.android.mesh.MeshNetwork;
@@ -110,6 +111,10 @@ class DefaultNoOperationMessageState extends MeshMessageState {
                     }
                     mInternalTransportCallbacks.updateMeshNetwork(status);
                     mMeshStatusCallbacks.onMeshMessageReceived(message.getSrc(), status);
+                } else if (message.getOpCode() == ApplicationMessageOpCodes.SCHEDULER_ACTION_STATUS) {
+                    final SchedulerActionStatus schedulerActionStatus = new SchedulerActionStatus(message);
+                    mInternalTransportCallbacks.updateMeshNetwork(schedulerActionStatus);
+                    mMeshStatusCallbacks.onMeshMessageReceived(message.getSrc(), schedulerActionStatus);
                 } else {
                     handleUnknownPdu(message);
                 }
@@ -367,7 +372,11 @@ class DefaultNoOperationMessageState extends MeshMessageState {
                     registerStatus.parseStatusParameters();
                     mInternalTransportCallbacks.updateMeshNetwork(registerStatus);
                     mMeshStatusCallbacks.onMeshMessageReceived(message.getSrc(), registerStatus);
-                } else {
+                } else if (message.getOpCode() == ApplicationMessageOpCodes.SCHEDULER_STATUS) {
+                    final SchedulerStatus schedulerStatus = new SchedulerStatus(message);
+                    mInternalTransportCallbacks.updateMeshNetwork(schedulerStatus);
+                    mMeshStatusCallbacks.onMeshMessageReceived(message.getSrc(), schedulerStatus);
+                }  else {
                     handleUnknownPdu(message);
                 }
                 break;
