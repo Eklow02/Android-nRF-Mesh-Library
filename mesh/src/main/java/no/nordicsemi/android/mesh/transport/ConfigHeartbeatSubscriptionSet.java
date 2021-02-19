@@ -28,20 +28,30 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
 import no.nordicsemi.android.mesh.opcodes.ConfigMessageOpCodes;
-import no.nordicsemi.android.mesh.utils.MeshAddress;
-import no.nordicsemi.android.mesh.utils.MeshParserUtils;
+
+import static no.nordicsemi.android.mesh.utils.Heartbeat.PERIOD_LOG_MIN;
+import static no.nordicsemi.android.mesh.utils.Heartbeat.isValidHeartbeatPeriodLog;
+import static no.nordicsemi.android.mesh.utils.MeshAddress.UNASSIGNED_ADDRESS;
+import static no.nordicsemi.android.mesh.utils.MeshAddress.isValidHeartbeatSubscriptionDestination;
+import static no.nordicsemi.android.mesh.utils.MeshAddress.isValidHeartbeatSubscriptionSource;
 
 /**
  * ConfigHeartbeatSubscriptionSet message.
  */
-@SuppressWarnings("unused")
 public class ConfigHeartbeatSubscriptionSet extends ConfigMessage {
 
     private static final String TAG = ConfigHeartbeatSubscriptionSet.class.getSimpleName();
     private static final int OP_CODE = ConfigMessageOpCodes.CONFIG_HEARTBEAT_SUBSCRIPTION_SET;
     private int srcAddress;
     private int dstAddress;
-    private final int periodLog;
+    private byte periodLog;
+
+    /**
+     * Constructs ConfigHeartbeatSubscriptionSet message. Use this constructor to clear Heartbeat Subscriptions.
+     */
+    public ConfigHeartbeatSubscriptionSet() throws IllegalArgumentException {
+        this(UNASSIGNED_ADDRESS, UNASSIGNED_ADDRESS, (byte) PERIOD_LOG_MIN);
+    }
 
     /**
      * Constructs ConfigHeartbeatSubscriptionSet message.
@@ -58,14 +68,13 @@ public class ConfigHeartbeatSubscriptionSet extends ConfigMessage {
      */
     public ConfigHeartbeatSubscriptionSet(final int srcAddress,
                                           final int dstAddress,
-                                          final int periodLog) throws IllegalArgumentException {
-        if (MeshAddress.isValidHeartbeatSubscriptionSource(srcAddress))
+                                          final byte periodLog) throws IllegalArgumentException {
+        if (isValidHeartbeatSubscriptionSource(srcAddress))
             this.srcAddress = srcAddress;
-        if (MeshAddress.isValidHeartbeatSubscriptionDestination(dstAddress))
+        if (isValidHeartbeatSubscriptionDestination(dstAddress))
             this.dstAddress = dstAddress;
-        if (!MeshParserUtils.isValidHeartbeatPeriodLog(periodLog))
-            throw new IllegalArgumentException("Period log must be within the range of 0x00 to 0x11!");
-        this.periodLog = periodLog;
+        if (isValidHeartbeatPeriodLog(periodLog))
+            this.periodLog = periodLog;
         assembleMessageParameters();
     }
 
@@ -82,7 +91,7 @@ public class ConfigHeartbeatSubscriptionSet extends ConfigMessage {
         final ByteBuffer paramsBuffer = ByteBuffer.allocate(5).order(ByteOrder.LITTLE_ENDIAN);
         paramsBuffer.putShort((short) srcAddress);
         paramsBuffer.putShort((short) dstAddress);
-        paramsBuffer.put((byte) periodLog);
+        paramsBuffer.put(periodLog);
         mParameters = paramsBuffer.array();
     }
 }
