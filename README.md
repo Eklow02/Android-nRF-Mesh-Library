@@ -1,6 +1,10 @@
 # Android-nRF-Mesh-Library
 [ ![Download](https://api.bintray.com/packages/nordic/android/no.nordicsemi.android%3Amesh/images/download.svg) ](https://bintray.com/nordic/android/no.nordicsemi.android%3Amesh/_latestVersion)
 
+This is a Fork of [GitHub NordicSemiconductor Android nRF-Mesh-Library](https://github.com/NordicSemiconductor/Android-nRF-Mesh-Library).
+The Branch `master-nordic` has the upstream to the master of the nordic library.
+So we can track the master of the library and can easily merge the new version into our `master` via a feature branch.
+
 ## About
 The Android-nRF-Mesh-Library allows provisioning and sending messages to Bluetooth Mesh devices. 
 
@@ -51,7 +55,7 @@ The library may be found on jcenter and Maven Central repository.
 Add it to your project by adding the following dependency:
 
 ```grovy
-implementation 'no.nordicsemi.android:mesh:2.3.0'
+implementation 'no.nordicsemi.android:mesh:3.0.3'
 ```
 
 #### Manual

@@ -29,8 +29,6 @@ import no.nordicsemi.android.mesh.transport.MeshModel;
 
 public abstract class SigModel extends MeshModel implements Parcelable {
 
-    public static final int MODEL_ID_LENGTH = 2;
-
     SigModel(final int sigModelId) {
         super(sigModelId);
     }

@@ -9,21 +9,13 @@ import com.google.gson.annotations.SerializedName;
 import androidx.annotation.NonNull;
 import no.nordicsemi.android.mesh.Features;
 
+import static no.nordicsemi.android.mesh.utils.MeshAddress.UNASSIGNED_ADDRESS;
+
 /**
  * Class containing the Heartbeat subscription configuration.
  */
-@SuppressWarnings("unused")
 public class HeartbeatPublication extends Heartbeat implements Parcelable {
 
-    @Expose
-    @SerializedName("address")
-    private final int dst;
-    @Expose
-    @SerializedName("count")
-    private final int countLog;
-    @Expose
-    @SerializedName("period")
-    private final int periodLog;
     @Expose
     @SerializedName("ttl")
     private final int ttl;
@@ -47,33 +39,22 @@ public class HeartbeatPublication extends Heartbeat implements Parcelable {
      * @param netKeyIndex Net key index.
      */
     public HeartbeatPublication(final int dst,
-                                final int countLog,
-                                final int periodLog,
+                                final byte countLog,
+                                final byte periodLog,
                                 final int ttl,
                                 final Features features,
                                 final int netKeyIndex) {
-        this.dst = dst;
-        this.countLog = countLog;
-        this.periodLog = periodLog;
+        super(dst, periodLog, countLog);
         this.ttl = ttl;
         this.features = features;
         this.netKeyIndex = netKeyIndex;
     }
 
-    private HeartbeatPublication(Parcel in) {
-        dst = in.readInt();
-        countLog = in.readInt();
-        periodLog = in.readInt();
-        ttl = in.readInt();
-        features = in.readParcelable(Features.class.getClassLoader());
-        netKeyIndex = in.readInt();
-    }
-
     @Override
     public void writeToParcel(Parcel dest, int flags) {
         dest.writeInt(dst);
-        dest.writeInt(countLog);
-        dest.writeInt(periodLog);
+        dest.writeByte(countLog);
+        dest.writeByte(periodLog);
         dest.writeInt(ttl);
         dest.writeParcelable(features, flags);
         dest.writeInt(netKeyIndex);
@@ -87,7 +68,12 @@ public class HeartbeatPublication extends Heartbeat implements Parcelable {
     public static final Creator<HeartbeatPublication> CREATOR = new Creator<HeartbeatPublication>() {
         @Override
         public HeartbeatPublication createFromParcel(Parcel in) {
-            return new HeartbeatPublication(in);
+            return new HeartbeatPublication(in.readInt(),
+                    in.readByte(),
+                    in.readByte(),
+                    in.readInt(),
+                    in.readParcelable(Features.class.getClassLoader()),
+                    in.readInt());
         }
 
         @Override
@@ -103,29 +89,12 @@ public class HeartbeatPublication extends Heartbeat implements Parcelable {
                 "\nCount Log: " + Integer.toHexString(countLog) +
                 "\nPeriod Log: " + Integer.toHexString(periodLog) +
                 "\nTTL: " + ttl +
-                "\nFeatures: " + features.toString() +
+                "\nFeatures: " + features == null ? "null" : features.toString() +
                 "\nNet key index: " + Integer.toHexString(netKeyIndex);
     }
 
-    /**
-     * Returns the destination address of the Heartbeat publications.
-     */
-    public int getDstAddress() {
-        return dst;
-    }
-
-    /**
-     * Returns the publication count.
-     */
-    public int getCountLog() {
-        return countLog;
-    }
-
-    /**
-     * Returns the period log.
-     */
-    public int getPeriodLog() {
-        return periodLog;
+    public int getPeriod(){
+        return calculateHeartbeatPeriod(periodLog);
     }
 
     /**
@@ -147,5 +116,47 @@ public class HeartbeatPublication extends Heartbeat implements Parcelable {
      */
     public int getNetKeyIndex() {
         return netKeyIndex;
+    }
+
+    /**
+     * Returns true if the heartbeat subscriptions are enabled.
+     */
+    public boolean isEnabled() {
+        return dst != UNASSIGNED_ADDRESS;
+    }
+
+    public String getPeriodLogDescription() {
+        if (periodLog == 0x00)
+            return "Disabled";
+        else if (periodLog >= 0x01 || periodLog <= 0x11)
+            return (int) Math.pow(2, periodLog - 1) + " s";
+        else
+            return "Prohibited";
+    }
+
+    public Short getPeriodLog2Period(final int periodLog) {
+        if (periodLog == 0x00)
+            return 0x0000;
+        else if (periodLog >= 0x01 && periodLog <= 0x10) {
+            return (short) (Math.pow(2, periodLog - 1));
+        } else return (short) 0xFFFF;
+    }
+
+    public String getCountLogDescription() {
+        if (countLog == 0x00)
+            return "Disabled";
+        else if (countLog == 0xFF)
+            return "Indefinite";
+        else if (countLog == 0x01 || countLog == 0x02)
+            return String.valueOf(countLog);
+        else if (countLog == 0x11) {
+            return "0x8001 ... 0xFFFE";
+        } else if (countLog >= 0x03 && countLog <= 0x10) {
+            final int lowerBound = (int) (Math.pow(2, countLog - 2)) + 1;
+            final int upperBound = (int) Math.pow(2, countLog - 1);
+            return lowerBound + " ... " + upperBound;
+        } else {
+            return "Invalid";
+        }
     }
 }
