@@ -8,7 +8,7 @@ import androidx.annotation.NonNull;
 
 import java.security.InvalidParameterException;
 
-import no.nordicsemi.android.mesh.data.TransitionTime;
+import no.nordicsemi.android.mesh.data.GenericTransitionTime;
 import no.nordicsemi.android.mesh.opcodes.ApplicationMessageOpCodes;
 import no.nordicsemi.android.mesh.utils.ArrayUtils;
 import no.nordicsemi.android.mesh.utils.BitReader;
@@ -16,11 +16,11 @@ import no.nordicsemi.android.mesh.utils.MeshAddress;
 
 public class GenericDefaultTransitionTimeStatus extends GenericStatusMessage implements Parcelable {
 
-    private static final String TAG = SchedulerActionStatus.class.getSimpleName();
+    private static final String TAG = GenericDefaultTransitionTimeStatus.class.getSimpleName();
     private static final int OP_CODE = ApplicationMessageOpCodes.GENERIC_DEFAULT_TRANSITION_TIME_STATUS;
     private static final int GENERIC_DEFAULT_TRANSITION_TIME_STATUS_LENGTH = 8;
 
-    private TransitionTime transitionTime;
+    private GenericTransitionTime genericTransitionTime;
 
     private static final Creator<GenericDefaultTransitionTimeStatus> CREATOR = new Creator<GenericDefaultTransitionTimeStatus>() {
         @Override
@@ -64,8 +64,8 @@ public class GenericDefaultTransitionTimeStatus extends GenericStatusMessage imp
         if (mParameters.length == GENERIC_DEFAULT_TRANSITION_TIME_STATUS_LENGTH) {
             BitReader bitReader = new BitReader(ArrayUtils.reverseArray(mParameters));
             try {
-                transitionTime = new TransitionTime(bitReader.getBits(GENERIC_DEFAULT_TRANSITION_TIME_STATUS_LENGTH));
-                Log.v(TAG, "Parsed Transition time status: "+transitionTime.toString());
+                genericTransitionTime = new GenericTransitionTime(bitReader.getBits(GENERIC_DEFAULT_TRANSITION_TIME_STATUS_LENGTH));
+                Log.v(TAG, "Parsed Transition time status: "+ genericTransitionTime.toString());
             } catch (InvalidParameterException e) {
                 Log.v(TAG, "Couldn't parse TransitionTime.");
             }
@@ -77,7 +77,7 @@ public class GenericDefaultTransitionTimeStatus extends GenericStatusMessage imp
         return OP_CODE;
     }
 
-    public TransitionTime getTransitionTime() {
-        return transitionTime;
+    public GenericTransitionTime getGenericTransitionTime() {
+        return genericTransitionTime;
     }
 }

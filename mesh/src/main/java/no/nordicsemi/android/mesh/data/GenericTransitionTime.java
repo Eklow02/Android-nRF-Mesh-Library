@@ -7,19 +7,19 @@ import no.nordicsemi.android.mesh.utils.BitReader;
 /**
  * Transition time (see Section 3.1.3 inside the specification)
  */
-public class TransitionTime {
+public class GenericTransitionTime {
 
     public static final int TRANSITION_TIME_BITS_LENGTH = TransitionStep.TRANSITION_NUMBER_STEP_BITS_LENGTH + TransitionResolution.TRANSITION_STEP_RESOLUTION_BITS_LENGTH;
 
     public final TransitionResolution resolution;
     public final TransitionStep transitionStep;
 
-    public TransitionTime(TransitionResolution transitionResolution, TransitionStep transitionSteps) {
+    public GenericTransitionTime(TransitionResolution transitionResolution, TransitionStep transitionSteps) {
         this.resolution = transitionResolution;
         this.transitionStep = transitionSteps;
     }
 
-    public TransitionTime(int value) {
+    public GenericTransitionTime(int value) {
         byte[] bytes = ByteBuffer.allocate(TRANSITION_TIME_BITS_LENGTH).putInt(value).array();
         final BitReader bitReader = new BitReader(bytes);
         this.resolution = TransitionResolution.fromValue(bitReader.getBits(TransitionResolution.TRANSITION_STEP_RESOLUTION_BITS_LENGTH));

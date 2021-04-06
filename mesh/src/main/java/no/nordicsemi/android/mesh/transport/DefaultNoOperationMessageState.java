@@ -9,8 +9,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
 import no.nordicsemi.android.mesh.Features;
 import no.nordicsemi.android.mesh.Group;
 import no.nordicsemi.android.mesh.MeshManagerApi;
@@ -129,6 +127,10 @@ class DefaultNoOperationMessageState extends MeshMessageState {
                     final SchedulerActionStatus schedulerActionStatus = new SchedulerActionStatus(message);
                     mInternalTransportCallbacks.updateMeshNetwork(schedulerActionStatus);
                     mMeshStatusCallbacks.onMeshMessageReceived(message.getSrc(), schedulerActionStatus);
+                } else if (message.getOpCode() == ApplicationMessageOpCodes.GENERIC_DEFAULT_TRANSITION_TIME_STATUS) {
+                    final GenericDefaultTransitionTimeStatus genericDefaultTransitionTimeStatus = new GenericDefaultTransitionTimeStatus(message);
+                    mInternalTransportCallbacks.updateMeshNetwork(genericDefaultTransitionTimeStatus);
+                    mMeshStatusCallbacks.onMeshMessageReceived(message.getSrc(), genericDefaultTransitionTimeStatus);
                 } else {
                     handleUnknownPdu(message);
                 }
