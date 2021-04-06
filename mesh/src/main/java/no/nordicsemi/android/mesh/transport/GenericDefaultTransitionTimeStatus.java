@@ -18,7 +18,7 @@ public class GenericDefaultTransitionTimeStatus extends GenericStatusMessage imp
 
     private static final String TAG = GenericDefaultTransitionTimeStatus.class.getSimpleName();
     private static final int OP_CODE = ApplicationMessageOpCodes.GENERIC_DEFAULT_TRANSITION_TIME_STATUS;
-    private static final int GENERIC_DEFAULT_TRANSITION_TIME_STATUS_LENGTH = 8;
+    private static final int GENERIC_DEFAULT_TRANSITION_TIME_STATUS_LENGTH = 1;
 
     private GenericTransitionTime genericTransitionTime;
 

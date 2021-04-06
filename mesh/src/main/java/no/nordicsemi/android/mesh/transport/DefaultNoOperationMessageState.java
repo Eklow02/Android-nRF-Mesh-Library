@@ -127,11 +127,7 @@ class DefaultNoOperationMessageState extends MeshMessageState {
                     final SchedulerActionStatus schedulerActionStatus = new SchedulerActionStatus(message);
                     mInternalTransportCallbacks.updateMeshNetwork(schedulerActionStatus);
                     mMeshStatusCallbacks.onMeshMessageReceived(message.getSrc(), schedulerActionStatus);
-                } else if (message.getOpCode() == ApplicationMessageOpCodes.GENERIC_DEFAULT_TRANSITION_TIME_STATUS) {
-                    final GenericDefaultTransitionTimeStatus genericDefaultTransitionTimeStatus = new GenericDefaultTransitionTimeStatus(message);
-                    mInternalTransportCallbacks.updateMeshNetwork(genericDefaultTransitionTimeStatus);
-                    mMeshStatusCallbacks.onMeshMessageReceived(message.getSrc(), genericDefaultTransitionTimeStatus);
-                } else {
+                }  else {
                     handleUnknownPdu(message);
                 }
                 break;
@@ -416,6 +412,10 @@ class DefaultNoOperationMessageState extends MeshMessageState {
                         mMeshStatusCallbacks.onMeshMessageReceived(message.getSrc(), status);
                     }
 
+                } else if (message.getOpCode() == ApplicationMessageOpCodes.GENERIC_DEFAULT_TRANSITION_TIME_STATUS) {
+                    final GenericDefaultTransitionTimeStatus genericDefaultTransitionTimeStatus = new GenericDefaultTransitionTimeStatus(message);
+                    mInternalTransportCallbacks.updateMeshNetwork(genericDefaultTransitionTimeStatus);
+                    mMeshStatusCallbacks.onMeshMessageReceived(message.getSrc(), genericDefaultTransitionTimeStatus);
                 } else {
                     handleUnknownPdu(message);
                 }
