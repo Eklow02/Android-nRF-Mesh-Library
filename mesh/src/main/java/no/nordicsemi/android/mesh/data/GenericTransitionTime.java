@@ -1,5 +1,7 @@
 package no.nordicsemi.android.mesh.data;
 
+import java.util.Objects;
+
 /**
  * Transition time (see Section 3.1.3 inside the specification)
  */
@@ -22,6 +24,28 @@ public class GenericTransitionTime {
 
     public int getValue() {
         return (transitionStep.value & 0x3F) | (resolution.value << 6);
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        GenericTransitionTime that = (GenericTransitionTime) o;
+        return resolution == that.resolution &&
+                transitionStep.equals(that.transitionStep);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(resolution, transitionStep);
+    }
+
+    @Override
+    public String toString() {
+        return "GenericTransitionTime{" +
+                "resolution=" + resolution +
+                ", transitionStep=" + transitionStep +
+                '}';
     }
 
     public static final class TransitionStep {
@@ -49,6 +73,26 @@ public class GenericTransitionTime {
 
         TransitionStep(int value) {
             this.value = value;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            TransitionStep that = (TransitionStep) o;
+            return value == that.value;
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(value);
+        }
+
+        @Override
+        public String toString() {
+            return "TransitionStep{" +
+                    "value=" + value +
+                    '}';
         }
     }
 
