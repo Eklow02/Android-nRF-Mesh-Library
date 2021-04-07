@@ -1,9 +1,5 @@
 package no.nordicsemi.android.mesh.data;
 
-import java.nio.ByteBuffer;
-
-import no.nordicsemi.android.mesh.utils.BitReader;
-
 /**
  * Transition time (see Section 3.1.3 inside the specification)
  */
@@ -20,14 +16,12 @@ public class GenericTransitionTime {
     }
 
     public GenericTransitionTime(int value) {
-        byte[] bytes = ByteBuffer.allocate(TRANSITION_TIME_BITS_LENGTH).putInt(value).array();
-        final BitReader bitReader = new BitReader(bytes);
-        this.resolution = TransitionResolution.fromValue(bitReader.getBits(TransitionResolution.TRANSITION_STEP_RESOLUTION_BITS_LENGTH));
-        this.transitionStep = TransitionStep.Specific(bitReader.getBits(TransitionStep.TRANSITION_NUMBER_STEP_BITS_LENGTH));
+        this.resolution = TransitionResolution.fromValue(value >> 6);
+        this.transitionStep = TransitionStep.Specific(value & 0x3F);
     }
 
     public int getValue() {
-        return (resolution.value << 6 | transitionStep.value);
+        return (transitionStep.value & 0x3F) | (resolution.value << 6);
     }
 
     public static final class TransitionStep {

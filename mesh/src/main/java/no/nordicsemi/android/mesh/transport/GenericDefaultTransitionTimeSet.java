@@ -12,7 +12,7 @@ import no.nordicsemi.android.mesh.utils.SecureUtils;
 public class GenericDefaultTransitionTimeSet extends GenericMessage {
 
     private static final int OP_CODE = ApplicationMessageOpCodes.GENERIC_DEFAULT_TRANSITION_TIME_SET;
-    private static final int GENERIC_DEFAULT_TRANSITION_TIME_SET_PARAMS_LENGTH = GenericTransitionTime.TRANSITION_TIME_BITS_LENGTH;
+    private static final int GENERIC_DEFAULT_TRANSITION_TIME_SET_PARAMS_BIT_LENGTH = 8;
 
     private final GenericTransitionTime genericTransitionTime;
 
@@ -33,8 +33,8 @@ public class GenericDefaultTransitionTimeSet extends GenericMessage {
     @Override
     void assembleMessageParameters() {
         mAid = SecureUtils.calculateK4(mAppKey.getKey());
-        BitWriter bitWriter = new BitWriter(GENERIC_DEFAULT_TRANSITION_TIME_SET_PARAMS_LENGTH);
-        bitWriter.write(genericTransitionTime.getValue(), GENERIC_DEFAULT_TRANSITION_TIME_SET_PARAMS_LENGTH);
+        BitWriter bitWriter = new BitWriter(GENERIC_DEFAULT_TRANSITION_TIME_SET_PARAMS_BIT_LENGTH);
+        bitWriter.write(genericTransitionTime.getValue(), GENERIC_DEFAULT_TRANSITION_TIME_SET_PARAMS_BIT_LENGTH);
         mParameters = ArrayUtils.reverseArray(bitWriter.toByteArray());
     }
 

@@ -18,7 +18,7 @@ public class GenericDefaultTransitionTimeStatus extends GenericStatusMessage imp
 
     private static final String TAG = GenericDefaultTransitionTimeStatus.class.getSimpleName();
     private static final int OP_CODE = ApplicationMessageOpCodes.GENERIC_DEFAULT_TRANSITION_TIME_STATUS;
-    private static final int GENERIC_DEFAULT_TRANSITION_TIME_STATUS_LENGTH = 1;
+    private static final int GENERIC_DEFAULT_TRANSITION_TIME_STATUS_BIT_LENGTH = 8;
 
     private GenericTransitionTime genericTransitionTime;
 
@@ -61,10 +61,10 @@ public class GenericDefaultTransitionTimeStatus extends GenericStatusMessage imp
     @Override
     void parseStatusParameters() {
         Log.v(TAG, "Received default transition time status from: " + MeshAddress.formatAddress(mMessage.getSrc(), true));
-        if (mParameters.length == GENERIC_DEFAULT_TRANSITION_TIME_STATUS_LENGTH) {
+        if (mParameters.length == GENERIC_DEFAULT_TRANSITION_TIME_STATUS_BIT_LENGTH / 8) {
             BitReader bitReader = new BitReader(ArrayUtils.reverseArray(mParameters));
             try {
-                genericTransitionTime = new GenericTransitionTime(bitReader.getBits(GENERIC_DEFAULT_TRANSITION_TIME_STATUS_LENGTH));
+                genericTransitionTime = new GenericTransitionTime(bitReader.getBits(GENERIC_DEFAULT_TRANSITION_TIME_STATUS_BIT_LENGTH));
                 Log.v(TAG, "Parsed Transition time status: "+ genericTransitionTime.toString());
             } catch (InvalidParameterException e) {
                 Log.v(TAG, "Couldn't parse TransitionTime.");
