@@ -263,6 +263,7 @@ abstract class ProvisionedBaseMeshNode implements Parcelable {
     }
 
     /**
+<<<<<<< HEAD
      * Returns true if the node is blacklisted or false otherwise
      *
      * @deprecated Use {@link #isExcluded()} instead
@@ -285,6 +286,8 @@ abstract class ProvisionedBaseMeshNode implements Parcelable {
     }
 
     /**
+=======
+>>>>>>> master-nordic
      * Returns the {@link SecureNetworkBeacon} beacon of this node
      */
     public Boolean isSecureNetworkBeaconSupported() {

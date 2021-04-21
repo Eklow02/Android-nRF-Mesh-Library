@@ -26,7 +26,10 @@ import no.nordicsemi.android.nrfmesh.scenes.dialog.BottomSheetSceneRecallDialogF
 import no.nordicsemi.android.nrfmesh.viewmodels.ModelConfigurationViewModel;
 
 import static android.view.View.GONE;
+<<<<<<< HEAD
 import static android.view.View.INVISIBLE;
+=======
+>>>>>>> master-nordic
 import static android.view.View.VISIBLE;
 
 @AndroidEntryPoint
@@ -48,9 +51,17 @@ public class SceneServerModelActivity extends ModelConfigurationActivity impleme
         if (model != null) {
             final SceneServer sceneServer = (SceneServer) model;
             if (!sceneServer.getScenesNumbers().isEmpty()) {
+<<<<<<< HEAD
                 layoutSceneServerBinding.noCurrentSceneAvailable.setVisibility(INVISIBLE);
             } else {
                 layoutSceneServerBinding.noCurrentSceneAvailable.setVisibility(VISIBLE);
+=======
+                layoutSceneServerBinding.noCurrentSceneAvailable.setVisibility(GONE);
+                layoutSceneServerBinding.recyclerViewScenes.setVisibility(VISIBLE);
+            } else {
+                layoutSceneServerBinding.noCurrentSceneAvailable.setVisibility(VISIBLE);
+                layoutSceneServerBinding.recyclerViewScenes.setVisibility(GONE);
+>>>>>>> master-nordic
             }
         }
     }
@@ -77,14 +88,22 @@ public class SceneServerModelActivity extends ModelConfigurationActivity impleme
     @Override
     protected void enableClickableViews() {
         super.enableClickableViews();
+<<<<<<< HEAD
         if (layoutSceneServerBinding != null && layoutSceneServerBinding.actionRead != null)
+=======
+        if (layoutSceneServerBinding != null)
+>>>>>>> master-nordic
             layoutSceneServerBinding.actionRead.setEnabled(true);
     }
 
     @Override
     protected void disableClickableViews() {
         super.disableClickableViews();
+<<<<<<< HEAD
         if (layoutSceneServerBinding != null && layoutSceneServerBinding.actionRead != null)
+=======
+        if (layoutSceneServerBinding != null)
+>>>>>>> master-nordic
             layoutSceneServerBinding.actionRead.setEnabled(false);
     }
 

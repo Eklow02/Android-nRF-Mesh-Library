@@ -10,7 +10,7 @@ import no.nordicsemi.android.mesh.utils.BitWriter;
 import no.nordicsemi.android.mesh.utils.SecureUtils;
 
 
-public class SchedulerActionSet extends GenericMessage {
+public class SchedulerActionSet extends ApplicationMessage {
 
     private static final int OP_CODE = ApplicationMessageOpCodes.SCHEDULER_ACTION_SET;
     private static final int SCHEDULER_ACTION_SET_INDEX_PARAMS_LENGTH = 4 + ScheduleEntry.SCHEDULER_ENTRY_PARAMS_BITS_LENGTH;

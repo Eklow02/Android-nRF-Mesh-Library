@@ -14,7 +14,7 @@ import no.nordicsemi.android.mesh.utils.SecureUtils;
 
 import static android.content.ContentValues.TAG;
 
-public class SchedulerActionGet extends GenericMessage {
+public class SchedulerActionGet extends ApplicationMessage {
 
     private static final int OP_CODE = ApplicationMessageOpCodes.SCHEDULER_ACTION_GET;
     private static final int SCHEDULER_ACTION_GET_INDEX_PARAMS_LENGTH = 1;
