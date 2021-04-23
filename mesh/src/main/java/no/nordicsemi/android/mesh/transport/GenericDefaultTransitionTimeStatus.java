@@ -14,7 +14,7 @@ import no.nordicsemi.android.mesh.utils.ArrayUtils;
 import no.nordicsemi.android.mesh.utils.BitReader;
 import no.nordicsemi.android.mesh.utils.MeshAddress;
 
-public class GenericDefaultTransitionTimeStatus extends GenericStatusMessage implements Parcelable {
+public class GenericDefaultTransitionTimeStatus extends ApplicationStatusMessage implements Parcelable {
 
     private static final String TAG = GenericDefaultTransitionTimeStatus.class.getSimpleName();
     private static final int OP_CODE = ApplicationMessageOpCodes.GENERIC_DEFAULT_TRANSITION_TIME_STATUS;

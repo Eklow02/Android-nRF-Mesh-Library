@@ -14,7 +14,7 @@ import no.nordicsemi.android.mesh.utils.ArrayUtils;
 import no.nordicsemi.android.mesh.utils.BitReader;
 import no.nordicsemi.android.mesh.utils.MeshAddress;
 
-public class SchedulerActionStatus extends GenericStatusMessage implements Parcelable {
+public class SchedulerActionStatus extends ApplicationStatusMessage implements Parcelable {
 
     private static final String TAG = SchedulerActionStatus.class.getSimpleName();
     private static final int OP_CODE = ApplicationMessageOpCodes.SCHEDULER_ACTION_STATUS;

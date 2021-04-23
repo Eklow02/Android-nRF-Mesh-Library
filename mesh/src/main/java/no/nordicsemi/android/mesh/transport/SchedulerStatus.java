@@ -13,7 +13,7 @@ import no.nordicsemi.android.mesh.data.ScheduleEntry;
 import no.nordicsemi.android.mesh.opcodes.ApplicationMessageOpCodes;
 import no.nordicsemi.android.mesh.utils.MeshAddress;
 
-public class SchedulerStatus extends GenericStatusMessage implements Parcelable {
+public class SchedulerStatus extends ApplicationStatusMessage implements Parcelable {
 
     private static final String TAG = SchedulerStatus.class.getSimpleName();
     private static final int OP_CODE = ApplicationMessageOpCodes.SCHEDULER_STATUS;

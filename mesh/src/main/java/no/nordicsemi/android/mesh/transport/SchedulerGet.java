@@ -6,7 +6,7 @@ import no.nordicsemi.android.mesh.ApplicationKey;
 import no.nordicsemi.android.mesh.opcodes.ApplicationMessageOpCodes;
 import no.nordicsemi.android.mesh.utils.SecureUtils;
 
-public class SchedulerGet extends GenericMessage {
+public class SchedulerGet extends ApplicationMessage {
 
     private static final int OP_CODE = ApplicationMessageOpCodes.SCHEDULER_GET;
 

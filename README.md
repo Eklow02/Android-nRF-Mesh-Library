@@ -49,13 +49,13 @@ nRF Mesh for Android is supported on Android devices running Android 4.3 and onw
 
 ## How to include it in your own project
 
-#### Maven Central or jcenter
+#### Maven Central
 
-The library may be found on jcenter and Maven Central repository. 
+The library may be found on the Maven Central repository. 
 Add it to your project by adding the following dependency:
 
 ```grovy
-implementation 'no.nordicsemi.android:mesh:3.0.3'
+implementation 'no.nordicsemi.android:mesh:2.4.3'
 ```
 
 #### Manual
@@ -67,6 +67,7 @@ Clone this project and add *ble* module as a dependency to your project:
 include ':mesh'
 project(':mesh').projectDir = file('../Android-Mesh-Library/mesh')
 ```
+
 2. In *app/build.gradle* file add `implementation project(':mesh')` inside dependencies.
 3. Sync project and build it.
 
@@ -74,7 +75,7 @@ See example projects in this repository.
 
 #### Sample
 
-To start using the library in your own project take a look at the followign snippet.
+To start using the library in your own project take a look at the following snippet.
 ```java
         MeshManagerApi mMeshManagerApi = new MeshManagerApi(context);
         mMeshManagerApi.setMeshManagerCallbacks(this);
