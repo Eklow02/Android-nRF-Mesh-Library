@@ -296,6 +296,21 @@ public class ApplicationMessageOpCodes {
     public static final int GENERIC_DEFAULT_TRANSITION_TIME_STATUS = 0x8210;
 
     /**
+     * Opcode for the "OnPowerUp Get" message
+     */
+    public static final int GENERIC_ON_POWER_UP_GET = 0x8211;
+
+    /**
+     * Opcode for the "OnPowerUp Set" message
+     */
+    public static final int GENERIC_ON_POWER_UP_SET = 0x8213;
+
+    /**
+     * Opcode for the "OnPowerUp Status" message
+     */
+    public static final int GENERIC_ON_POWER_UP_STATUS = 0x8212;
+
+    /**
      * Opcode for the "Sensor Descriptor Get" message
      */
     public static final int SENSOR_DESCRIPTOR_GET = 0x8230;
