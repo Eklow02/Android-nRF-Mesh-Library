@@ -32,6 +32,10 @@ import static no.nordicsemi.android.mesh.utils.MeshParserUtils.isUuidPattern;
 import static no.nordicsemi.android.mesh.utils.MeshParserUtils.parseTimeStamp;
 import static no.nordicsemi.android.mesh.utils.MeshParserUtils.uuidToHex;
 
+import static no.nordicsemi.android.mesh.utils.MeshParserUtils.formatTimeStamp;
+import static no.nordicsemi.android.mesh.utils.MeshParserUtils.formatUuid;
+import static no.nordicsemi.android.mesh.utils.MeshParserUtils.isUuidPattern;
+
 public final class MeshNetworkDeserializer implements JsonSerializer<MeshNetwork>, JsonDeserializer<MeshNetwork> {
     private static final String TAG = MeshNetworkDeserializer.class.getSimpleName();
     private static final String ID = "http://www.bluetooth.com/specifications/assigned-numbers/mesh-profile/cdb-schema.json#";

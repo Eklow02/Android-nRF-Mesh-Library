@@ -2,12 +2,13 @@ package no.nordicsemi.android.mesh.transport;
 
 import android.util.Log;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
 import no.nordicsemi.android.mesh.Features;
 import no.nordicsemi.android.mesh.Group;
 import no.nordicsemi.android.mesh.MeshManagerApi;
@@ -113,15 +114,19 @@ class DefaultNoOperationMessageState extends MeshMessageState {
                     final ConfigHeartbeatPublicationStatus status = new ConfigHeartbeatPublicationStatus(message);
                     if (!isReceivedViaProxyFilter(message)) {
                         if (status.isSuccessful()) {
-                            final ConfigurationServerModel model = (ConfigurationServerModel) getMeshModel(node, status.getSrc(), CONFIGURATION_SERVER);
+                            final MeshModel model = getMeshModel(node, status.getSrc(), CONFIGURATION_SERVER);
                             if (model != null) {
-                                model.setHeartbeatPublication(!isValidUnassignedAddress(status.getHeartbeatPublication().getDst()) ?
-                                        status.getHeartbeatPublication() : null);
+                                ((ConfigurationServerModel) model).
+                                        setHeartbeatPublication(!isValidUnassignedAddress(status.getHeartbeatPublication().getDst()) ? status.getHeartbeatPublication() : null);
                             }
                         }
                     }
                     mInternalTransportCallbacks.updateMeshNetwork(status);
                     mMeshStatusCallbacks.onMeshMessageReceived(message.getSrc(), status);
+                } else if (message.getOpCode() == ApplicationMessageOpCodes.SCHEDULER_ACTION_STATUS) {
+                    final SchedulerActionStatus schedulerActionStatus = new SchedulerActionStatus(message);
+                    mInternalTransportCallbacks.updateMeshNetwork(schedulerActionStatus);
+                    mMeshStatusCallbacks.onMeshMessageReceived(message.getSrc(), schedulerActionStatus);
                 } else if (message.getOpCode() == ApplicationMessageOpCodes.SENSOR_DESCRIPTOR_STATUS) {
                     final SensorDescriptorStatus status = new SensorDescriptorStatus(message);
                     mInternalTransportCallbacks.updateMeshNetwork(status);
@@ -162,6 +167,10 @@ class DefaultNoOperationMessageState extends MeshMessageState {
                     }
                     mInternalTransportCallbacks.updateMeshNetwork(status);
                     mMeshStatusCallbacks.onMeshMessageReceived(message.getSrc(), status);
+                } else if (message.getOpCode() == ApplicationMessageOpCodes.GENERIC_ON_POWER_UP_STATUS) {
+                    final GenericOnPowerUpStatus genericOnPowerUpStatus = new GenericOnPowerUpStatus(message);
+                    mInternalTransportCallbacks.updateMeshNetwork(genericOnPowerUpStatus);
+                    mMeshStatusCallbacks.onMeshMessageReceived(message.getSrc(), genericOnPowerUpStatus);
                 } else if (message.getOpCode() == ConfigMessageOpCodes.CONFIG_NETKEY_STATUS) {
                     final ConfigNetKeyStatus status = new ConfigNetKeyStatus(message);
                     if (!isReceivedViaProxyFilter(message)) {
@@ -413,6 +422,10 @@ class DefaultNoOperationMessageState extends MeshMessageState {
                     final LightHslStatus lightHslStatus = new LightHslStatus(message);
                     mInternalTransportCallbacks.updateMeshNetwork(lightHslStatus);
                     mMeshStatusCallbacks.onMeshMessageReceived(message.getSrc(), lightHslStatus);
+                } else if (message.getOpCode() == ApplicationMessageOpCodes.SCHEDULER_STATUS) {
+                    final SchedulerStatus schedulerStatus = new SchedulerStatus(message);
+                    mInternalTransportCallbacks.updateMeshNetwork(schedulerStatus);
+                    mMeshStatusCallbacks.onMeshMessageReceived(message.getSrc(), schedulerStatus);
                 } else if (message.getOpCode() == ApplicationMessageOpCodes.LIGHT_LC_MODE_STATUS) {
                     final LightLCModeStatus lightLcModeStatus = new LightLCModeStatus(message);
                     mInternalTransportCallbacks.updateMeshNetwork(lightLcModeStatus);
@@ -446,6 +459,10 @@ class DefaultNoOperationMessageState extends MeshMessageState {
                         mInternalTransportCallbacks.updateMeshNetwork(status);
                         mMeshStatusCallbacks.onMeshMessageReceived(message.getSrc(), status);
                     }
+                } else if (message.getOpCode() == ApplicationMessageOpCodes.GENERIC_DEFAULT_TRANSITION_TIME_STATUS) {
+                    final GenericDefaultTransitionTimeStatus genericDefaultTransitionTimeStatus = new GenericDefaultTransitionTimeStatus(message);
+                    mInternalTransportCallbacks.updateMeshNetwork(genericDefaultTransitionTimeStatus);
+                    mMeshStatusCallbacks.onMeshMessageReceived(message.getSrc(), genericDefaultTransitionTimeStatus);
                 } else {
                     handleUnknownPdu(message);
                 }

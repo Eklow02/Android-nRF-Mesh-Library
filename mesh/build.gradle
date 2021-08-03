@@ -30,7 +30,7 @@ android {
         minSdkVersion 18
         targetSdkVersion 30
         versionCode 81
-        versionName VERSION_NAME
+        versionName "1.0.0"
 
         javaCompileOptions {
             annotationProcessorOptions {
@@ -51,8 +51,17 @@ android {
         sourceCompatibility JavaVersion.VERSION_1_8
     }
 
+    lintOptions{
+        abortOnError false
+    }
+
     testOptions {
         unitTests.returnDefaultValues = true
+        unitTests {
+            all {
+                exclude 'no/nordicsemi/**'
+            }
+        }
     }
 }
 
@@ -67,10 +76,9 @@ dependencies {
     implementation 'com.madgag.spongycastle:prov:1.58.0.0'
     implementation 'com.google.code.gson:gson:2.8.7'
 
-    implementation 'androidx.room:room-runtime:2.3.0'
-    annotationProcessor 'androidx.room:room-compiler:2.3.0'
-    androidTestImplementation 'androidx.room:room-testing:2.3.0'
-
+    implementation 'androidx.room:room-runtime:2.3.0-rc01'
+    annotationProcessor 'androidx.room:room-compiler:2.3.0-rc01'
+    androidTestImplementation 'androidx.room:room-testing:2.3.0-rc01'
 }
 // === Maven Central configuration ===
 // The following file exists only when Android BLE Library project is opened, but not

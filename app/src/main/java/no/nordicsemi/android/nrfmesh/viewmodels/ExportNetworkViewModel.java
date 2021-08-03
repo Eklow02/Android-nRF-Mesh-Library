@@ -8,12 +8,19 @@ import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.List;
 
+<<<<<<< HEAD
+import androidx.annotation.NonNull;
+import androidx.hilt.lifecycle.ViewModelInject;
+import androidx.lifecycle.LiveData;
+import androidx.lifecycle.MutableLiveData;
+=======
 import javax.inject.Inject;
 
 import androidx.annotation.NonNull;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 import dagger.hilt.android.lifecycle.HiltViewModel;
+>>>>>>> master-nordic
 import no.nordicsemi.android.mesh.ApplicationKeysConfig;
 import no.nordicsemi.android.mesh.GroupsConfig;
 import no.nordicsemi.android.mesh.NetworkKey;
@@ -28,7 +35,10 @@ import no.nordicsemi.android.nrfmesh.utils.NetworkExportUtils;
 /**
  * ViewModel for {@link ExportNetworkActivity}
  */
+<<<<<<< HEAD
+=======
 @HiltViewModel
+>>>>>>> master-nordic
 public class ExportNetworkViewModel extends BaseViewModel implements NetworkExportUtils.NetworkExportCallbacks {
 
     private final SingleLiveEvent<String> networkExportState = new SingleLiveEvent<>();
@@ -38,7 +48,11 @@ public class ExportNetworkViewModel extends BaseViewModel implements NetworkExpo
     private final List<Provisioner> provisioners = new ArrayList<>();
     private final List<NetworkKey> networkKeys = new ArrayList<>();
 
+<<<<<<< HEAD
+    @ViewModelInject
+=======
     @Inject
+>>>>>>> master-nordic
     ExportNetworkViewModel(@NonNull final NrfMeshRepository nrfMeshRepository) {
         super(nrfMeshRepository);
         exportStatus.postValue(null);

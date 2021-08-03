@@ -27,15 +27,30 @@ import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextUtils;
 import android.text.TextWatcher;
+<<<<<<< HEAD
+import android.util.Log;
+=======
+>>>>>>> master-nordic
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
 import androidx.fragment.app.DialogFragment;
 import no.nordicsemi.android.mesh.Scene;
+<<<<<<< HEAD
+import no.nordicsemi.android.mesh.utils.MeshAddress;
+import no.nordicsemi.android.nrfmesh.R;
+import no.nordicsemi.android.nrfmesh.databinding.DialogFragmentCreateSceneBinding;
+import no.nordicsemi.android.nrfmesh.scenes.SceneCallbacks;
+import no.nordicsemi.android.nrfmesh.utils.HexKeyListener;
+import no.nordicsemi.android.nrfmesh.utils.Utils;
+
+import static no.nordicsemi.android.mesh.Scene.isValidSceneNumber;
+=======
 import no.nordicsemi.android.nrfmesh.R;
 import no.nordicsemi.android.nrfmesh.databinding.DialogFragmentCreateSceneBinding;
 import no.nordicsemi.android.nrfmesh.utils.HexKeyListener;
+>>>>>>> master-nordic
 
 
 public abstract class DialogFragmentScene extends DialogFragment {
@@ -45,11 +60,19 @@ public abstract class DialogFragmentScene extends DialogFragment {
     protected Scene mScene;
     protected AlertDialog.Builder alertDialogBuilder;
 
+<<<<<<< HEAD
+
+=======
+>>>>>>> master-nordic
     @Override
     public void onCreate(@Nullable final Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         if (getArguments() != null) {
             mScene = getArguments().getParcelable(SCENE);
+<<<<<<< HEAD
+            Log.v("TAG", mScene.toString());
+=======
+>>>>>>> master-nordic
         }
     }
 
@@ -61,6 +84,14 @@ public abstract class DialogFragmentScene extends DialogFragment {
         if (savedInstanceState != null) {
             mScene = savedInstanceState.getParcelable(SCENE);
         }
+<<<<<<< HEAD
+
+        if (mScene != null) {
+            binding.nameInput.setText(mScene.getName());
+            binding.numberInput.setText(MeshAddress.formatAddress(mScene.getNumber(), false));
+        }
+=======
+>>>>>>> master-nordic
         updateScene();
 
         binding.numberInput.setKeyListener(new HexKeyListener());
@@ -72,6 +103,10 @@ public abstract class DialogFragmentScene extends DialogFragment {
 
             @Override
             public void onTextChanged(final CharSequence s, final int start, final int before, final int count) {
+<<<<<<< HEAD
+                mScene = null;
+=======
+>>>>>>> master-nordic
                 if (TextUtils.isEmpty(s.toString())) {
                     binding.sceneNumberLayout.setError(getString(R.string.error_empty_group_address));
                 } else {
@@ -96,6 +131,27 @@ public abstract class DialogFragmentScene extends DialogFragment {
     }
 
     protected void updateScene() {
+<<<<<<< HEAD
+        if (mScene == null) {
+            mScene = ((SceneCallbacks) requireParentFragment()).createScene();
+        }
+        binding.nameInput.setText(mScene.getName());
+        binding.numberInput.setText(Scene.formatSceneNumber(mScene.getNumber(), false));
+    }
+
+    protected final boolean validateInput(@NonNull final String name, @NonNull final String input) {
+        try {
+            if (TextUtils.isEmpty(name)) {
+                binding.sceneNameLayout.setError(getString(R.string.error_empty_group_name));
+                return false;
+            }
+            if (input.length() % 4 != 0 || !input.matches(Utils.HEX_PATTERN)) {
+                binding.sceneNameLayout.setError(getString(R.string.invalid_scene_number));
+                return false;
+            }
+
+            return (isValidSceneNumber(Integer.parseInt(input, 16)));
+=======
         binding.nameInput.setText(mScene.getName());
         binding.numberInput.setText(Scene.formatSceneNumber(mScene.getNumber(), false));
         binding.sceneNumberLayout.setEnabled(false);
@@ -108,6 +164,7 @@ public abstract class DialogFragmentScene extends DialogFragment {
                 return false;
             }
             return true;
+>>>>>>> master-nordic
         } catch (IllegalArgumentException ex) {
             binding.sceneNumberLayout.setError(ex.getMessage());
             return false;

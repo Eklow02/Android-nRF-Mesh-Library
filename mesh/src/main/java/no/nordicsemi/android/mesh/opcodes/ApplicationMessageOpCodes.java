@@ -255,6 +255,62 @@ public class ApplicationMessageOpCodes {
     public static final int SCENE_DELETE_UNACKNOWLEDGED = 0x829F;
 
     /**
+<<<<<<< HEAD
+     * Opcode for the "Scheduler Get" message
+     */
+    public static final int SCHEDULER_GET = 0x8249;
+
+    /**
+     * Opcode for the "Scheduler Status" message
+     */
+    public static final int SCHEDULER_STATUS = 0x824A;
+
+    /**
+     * Opcode for the "Scheduler Action Get" message
+     */
+    public static final int SCHEDULER_ACTION_GET = 0x8248;
+
+    /**
+     * Opcode for the "Scheduler Action Set" message
+     */
+    public static final int SCHEDULER_ACTION_SET = 0x60;
+
+    /**
+     * Opcode for the "Scheduler Action Status" message
+     */
+    public static final int SCHEDULER_ACTION_STATUS = 0x5F;
+
+    /**
+     * Opcode for the "Generic Default Transition Time Get" message
+     */
+    public static final int GENERIC_DEFAULT_TRANSITION_TIME_GET = 0x820D;
+
+    /**
+     * Opcode for the "Generic Default Transition Time Set" message
+     */
+    public static final int GENERIC_DEFAULT_TRANSITION_TIME_SET = 0x820E;
+
+    /**
+     * Opcode for the "Generic Default Transition Time Status" message
+     */
+    public static final int GENERIC_DEFAULT_TRANSITION_TIME_STATUS = 0x8210;
+
+    /**
+     * Opcode for the "OnPowerUp Get" message
+     */
+    public static final int GENERIC_ON_POWER_UP_GET = 0x8211;
+
+    /**
+     * Opcode for the "OnPowerUp Set" message
+     */
+    public static final int GENERIC_ON_POWER_UP_SET = 0x8213;
+
+    /**
+     * Opcode for the "OnPowerUp Status" message
+     */
+    public static final int GENERIC_ON_POWER_UP_STATUS = 0x8212;
+
+    /**
      * Opcode for the "Sensor Descriptor Get" message
      */
     public static final int SENSOR_DESCRIPTOR_GET = 0x8230;
@@ -342,5 +398,4 @@ public class ApplicationMessageOpCodes {
      * Opcode for the "Sensor Settings Status" message
      */
     public static final int SENSOR_SETTING_STATUS = 0x5B;
-
 }

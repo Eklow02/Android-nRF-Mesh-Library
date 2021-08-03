@@ -26,6 +26,10 @@ import android.app.Dialog;
 import android.os.Bundle;
 
 import androidx.annotation.NonNull;
+<<<<<<< HEAD
+import androidx.annotation.Nullable;
+=======
+>>>>>>> master-nordic
 import androidx.appcompat.app.AlertDialog;
 import no.nordicsemi.android.mesh.Scene;
 import no.nordicsemi.android.nrfmesh.R;
@@ -44,6 +48,17 @@ public class DialogFragmentEditScene extends DialogFragmentScene {
         return fragmentCreateScene;
     }
 
+<<<<<<< HEAD
+    @Override
+    public void onCreate(@Nullable final Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        if (getArguments() != null) {
+            mScene = getArguments().getParcelable(SCENE);
+        }
+    }
+
+=======
+>>>>>>> master-nordic
     @NonNull
     @Override
     public Dialog onCreateDialog(final Bundle savedInstanceState) {
@@ -59,7 +74,11 @@ public class DialogFragmentEditScene extends DialogFragmentScene {
             final String name = binding.nameInput.getEditableText().toString().trim();
             final String number = binding.numberInput.getEditableText().toString().trim();
             try {
+<<<<<<< HEAD
+                if (validateInput(name, number)) {
+=======
                 if (validateInput(name)) {
+>>>>>>> master-nordic
                     mScene.setName(name);
                     if (((SceneCallbacks) requireActivity()).onSceneUpdated(mScene)) {
                         dismiss();
@@ -71,4 +90,12 @@ public class DialogFragmentEditScene extends DialogFragmentScene {
         });
         return alertDialog;
     }
+<<<<<<< HEAD
+
+    protected final void updateScene() {
+        super.updateScene();
+        binding.sceneNumberLayout.setEnabled(false);
+    }
+=======
+>>>>>>> master-nordic
 }

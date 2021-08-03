@@ -1,6 +1,10 @@
 # Android-nRF-Mesh-Library
 [ ![Download](https://maven-badges.herokuapp.com/maven-central/no.nordicsemi.android/mesh/badge.svg?style=plastic) ](https://search.maven.org/artifact/no.nordicsemi.android/mesh)
 
+This is a Fork of [GitHub NordicSemiconductor Android nRF-Mesh-Library](https://github.com/NordicSemiconductor/Android-nRF-Mesh-Library).
+The Branch `master-nordic` has the upstream to the master of the nordic library.
+So we can track the master of the library and can easily merge the new version into our `master` via a feature branch.
+
 ## About
 The Android-nRF-Mesh-Library allows provisioning and sending messages to Bluetooth Mesh devices. 
 

@@ -1031,6 +1031,7 @@ public class MeshManagerApi implements MeshMngrApi {
                     }
                 }
             }
+            mMeshNetwork.setTimestamp(System.currentTimeMillis());
             mMeshNetworkDb.update(mMeshNetwork, mMeshNetworkDao, mNetworkKeysDao, mApplicationKeysDao, mProvisionersDao, mProvisionedNodesDao,
                     mGroupsDao, mScenesDao);
             mMeshManagerCallbacks.onNetworkUpdated(mMeshNetwork);
