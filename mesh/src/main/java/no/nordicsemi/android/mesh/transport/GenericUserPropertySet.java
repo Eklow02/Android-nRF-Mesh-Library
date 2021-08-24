@@ -27,7 +27,7 @@ public class GenericUserPropertySet extends ApplicationMessage {
     @Override
     void assembleMessageParameters() {
         mAid = SecureUtils.calculateK4(mAppKey.getKey());
-        mParameters = ByteBuffer.allocate(PROPERTY_SET_PARAMS_LENGTH + values.length / 8)
+        mParameters = ByteBuffer.allocate(PROPERTY_SET_PARAMS_LENGTH + values.length)
                 .order(LITTLE_ENDIAN)
                 .putShort(propertyId)
                 .put(values)
