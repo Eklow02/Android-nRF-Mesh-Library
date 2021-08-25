@@ -155,6 +155,10 @@ class DefaultNoOperationMessageState extends MeshMessageState {
                     final SensorSeriesStatus status = new SensorSeriesStatus(message);
                     mInternalTransportCallbacks.updateMeshNetwork(status);
                     mMeshStatusCallbacks.onMeshMessageReceived(message.getSrc(), status);
+                } else if (message.getOpCode() == ApplicationMessageOpCodes.TIME_STATUS) {
+                    final TimeStatus timeStatus = new TimeStatus(message);
+                    mInternalTransportCallbacks.updateMeshNetwork(timeStatus);
+                    mMeshStatusCallbacks.onMeshMessageReceived(message.getSrc(), timeStatus);
                 } else {
                     handleUnknownPdu(message);
                 }

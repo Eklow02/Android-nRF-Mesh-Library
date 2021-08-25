@@ -398,4 +398,19 @@ public class ApplicationMessageOpCodes {
      * Opcode for the "Sensor Settings Status" message
      */
     public static final int SENSOR_SETTING_STATUS = 0x5B;
+
+    /**
+     * Opcode for the "Time Get" message
+     */
+    public static final int TIME_GET = 0x8237;
+
+    /**
+     * Opcode for the "Time Set" message
+     */
+    public static final int TIME_SET = 0x5C;
+
+    /**
+     * Opcode for the "Time Status" message
+     */
+    public static final int TIME_STATUS = 0x5D;
 }
