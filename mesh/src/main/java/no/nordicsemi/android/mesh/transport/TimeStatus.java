@@ -5,6 +5,7 @@ import android.os.Parcelable;
 import android.util.Log;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 
 import no.nordicsemi.android.mesh.opcodes.ApplicationMessageOpCodes;
 import no.nordicsemi.android.mesh.utils.ArrayUtils;
@@ -29,12 +30,18 @@ public class TimeStatus extends ApplicationStatusMessage implements Parcelable {
         }
     };
 
+    @Nullable
     private Integer taiSeconds;
-    private byte subSecond;
-    private byte uncertainty;
-    private boolean timeAuthority;
-    private short utcDelta;
-    private byte timeZoneOffset;
+    @Nullable
+    private Byte subSecond;
+    @Nullable
+    private Byte uncertainty;
+    @Nullable
+    private Boolean timeAuthority;
+    @Nullable
+    private Short utcDelta;
+    @Nullable
+    private Byte timeZoneOffset;
 
 
     public TimeStatus(@NonNull final AccessMessage message) {
@@ -47,18 +54,22 @@ public class TimeStatus extends ApplicationStatusMessage implements Parcelable {
     @Override
     void parseStatusParameters() {
         BitReader bitReader = new BitReader(ArrayUtils.reverseArray(mParameters));
-        taiSeconds = bitReader.getBits(40);
-        subSecond = (byte) bitReader.getBits(8);
-        uncertainty = (byte) bitReader.getBits(8);
-        timeAuthority = bitReader.getBits(1) == 1;
-        utcDelta = (short) bitReader.getBits(15);
-        timeZoneOffset = (byte) bitReader.getBits(8);
-        Log.v(TAG, "Time status has taiSeconds: "+taiSeconds);
-        Log.v(TAG, "Time status has subSecond: "+subSecond);
-        Log.v(TAG, "Time status has uncertainty: "+uncertainty);
-        Log.v(TAG, "Time status has timeAuthority: "+timeAuthority);
-        Log.v(TAG, "Time status has utcDelta: "+utcDelta);
-        Log.v(TAG, "Time status has timeZoneOffset: "+timeZoneOffset);
+        if (bitReader.bitsLeft() == TIME_BIT_SIZE) {
+            taiSeconds = bitReader.getBits(TAI_SECONDS_BIT_SIZE);
+            subSecond = (byte) bitReader.getBits(SUB_SECOND_BIT_SIZE);
+            uncertainty = (byte) bitReader.getBits(UNCERTAINTY_BIT_SIZE);
+            timeAuthority = bitReader.getBits(TIME_AUTHORITY_BIT_SIZE) == 1;
+            utcDelta = (short) bitReader.getBits(UTC_DELTA_BIT_SIZE);
+            timeZoneOffset = (byte) bitReader.getBits(TIME_ZONE_OFFSET_BIT_SIZE);
+            Log.v(TAG, "Time status has taiSeconds: "+taiSeconds);
+            Log.v(TAG, "Time status has subSecond: "+subSecond);
+            Log.v(TAG, "Time status has uncertainty: "+uncertainty);
+            Log.v(TAG, "Time status has timeAuthority: "+timeAuthority);
+            Log.v(TAG, "Time status has utcDelta: "+utcDelta);
+            Log.v(TAG, "Time status has timeZoneOffset: "+timeZoneOffset);
+        } else {
+            Log.v(TAG, "Time status has no values");
+        }
     }
 
     @Override
@@ -100,4 +111,13 @@ public class TimeStatus extends ApplicationStatusMessage implements Parcelable {
     public byte getTimeZoneOffset() {
         return timeZoneOffset;
     }
+
+    static final int TAI_SECONDS_BIT_SIZE = 40;
+    static final int SUB_SECOND_BIT_SIZE = 8;
+    static final int UNCERTAINTY_BIT_SIZE = 8;
+    static final int TIME_AUTHORITY_BIT_SIZE = 1;
+    static final int UTC_DELTA_BIT_SIZE = 15;
+    static final int TIME_ZONE_OFFSET_BIT_SIZE = 8;
+    static final int TIME_BIT_SIZE = TAI_SECONDS_BIT_SIZE + SUB_SECOND_BIT_SIZE + UNCERTAINTY_BIT_SIZE + TIME_AUTHORITY_BIT_SIZE
+            + UTC_DELTA_BIT_SIZE + TIME_ZONE_OFFSET_BIT_SIZE;
 }

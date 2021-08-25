@@ -1,5 +1,13 @@
 package no.nordicsemi.android.mesh.transport;
 
+import static no.nordicsemi.android.mesh.transport.TimeStatus.SUB_SECOND_BIT_SIZE;
+import static no.nordicsemi.android.mesh.transport.TimeStatus.TAI_SECONDS_BIT_SIZE;
+import static no.nordicsemi.android.mesh.transport.TimeStatus.TIME_AUTHORITY_BIT_SIZE;
+import static no.nordicsemi.android.mesh.transport.TimeStatus.TIME_BIT_SIZE;
+import static no.nordicsemi.android.mesh.transport.TimeStatus.TIME_ZONE_OFFSET_BIT_SIZE;
+import static no.nordicsemi.android.mesh.transport.TimeStatus.UNCERTAINTY_BIT_SIZE;
+import static no.nordicsemi.android.mesh.transport.TimeStatus.UTC_DELTA_BIT_SIZE;
+
 import androidx.annotation.NonNull;
 
 import no.nordicsemi.android.mesh.ApplicationKey;
@@ -46,17 +54,17 @@ public class TimeSet extends ApplicationMessage {
     @Override
     void assembleMessageParameters() {
         mAid = SecureUtils.calculateK4(mAppKey.getKey());
-        BitWriter bitWriter = new BitWriter(80);
-        bitWriter.write(taiSeconds, 40);
-        bitWriter.write(subSecond, 8);
-        bitWriter.write(uncertainty, 8);
+        BitWriter bitWriter = new BitWriter(TIME_BIT_SIZE);
+        bitWriter.write(taiSeconds, TAI_SECONDS_BIT_SIZE);
+        bitWriter.write(subSecond, SUB_SECOND_BIT_SIZE);
+        bitWriter.write(uncertainty, UNCERTAINTY_BIT_SIZE);
         if (timeAuthority) {
-            bitWriter.write(1, 1);
+            bitWriter.write(1, TIME_AUTHORITY_BIT_SIZE);
         } else {
-            bitWriter.write(0, 1);
+            bitWriter.write(0, TIME_AUTHORITY_BIT_SIZE);
         }
-        bitWriter.write(utcDelta, 15);
-        bitWriter.write(timeZoneOffset, 8);
+        bitWriter.write(utcDelta, UTC_DELTA_BIT_SIZE);
+        bitWriter.write(timeZoneOffset, TIME_ZONE_OFFSET_BIT_SIZE);
 
         mParameters = ArrayUtils.reverseArray(bitWriter.toByteArray());
     }
