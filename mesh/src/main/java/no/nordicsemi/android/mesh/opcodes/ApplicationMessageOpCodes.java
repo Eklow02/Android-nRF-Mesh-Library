@@ -413,4 +413,34 @@ public class ApplicationMessageOpCodes {
      * Opcode for the "Time Status" message
      */
     public static final int TIME_STATUS = 0x5D;
+
+    /**
+     * Opcode for the "Generic Admin Property Status" message
+     */
+    public static final int GENERIC_ADMIN_PROPERTY_STATUS = 0x4A;
+
+    /**
+     * Opcode for the "Generic Manufacturer Property Status" message
+     */
+    public static final int GENERIC_MANUFACTURER_PROPERTY_STATUS = 0x46;
+
+    /**
+     * Opcode for the "Generic User Property Status" message
+     */
+    public static final int GENERIC_USER_PROPERTY_STATUS = 0x4E;
+
+    /**
+     * Opcode for the "Generic User Property Set" message
+     */
+    public static final int GENERIC_USER_PROPERTY_SET = 0x4C;
+
+    /**
+     * Opcode for the "Generic Admin Property Set" message
+     */
+    public static final int GENERIC_ADMIN_PROPERTY_SET = 0x48;
+
+    /**
+     * Opcode for the "Generic Manufacturer Property Set" message
+     */
+    public static final int GENERIC_MANUFACTURER_PROPERTY_SET = 0x44;
 }
