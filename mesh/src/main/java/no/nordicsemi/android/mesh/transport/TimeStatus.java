@@ -30,17 +30,11 @@ public class TimeStatus extends ApplicationStatusMessage implements Parcelable {
         }
     };
 
-    @Nullable
     private Integer taiSeconds;
-    @Nullable
     private Byte subSecond;
-    @Nullable
     private Byte uncertainty;
-    @Nullable
     private Boolean timeAuthority;
-    @Nullable
     private Short utcDelta;
-    @Nullable
     private Byte timeZoneOffset;
 
 
@@ -88,27 +82,33 @@ public class TimeStatus extends ApplicationStatusMessage implements Parcelable {
         dest.writeParcelable(message, flags);
     }
 
+    @Nullable
     public Integer getTaiSeconds() {
         return taiSeconds;
     }
 
-    public byte getSubSecond() {
+    @Nullable
+    public Byte getSubSecond() {
         return subSecond;
     }
 
-    public byte getUncertainty() {
+    @Nullable
+    public Byte getUncertainty() {
         return uncertainty;
     }
 
-    public boolean isTimeAuthority() {
+    @Nullable
+    public Boolean isTimeAuthority() {
         return timeAuthority;
     }
 
-    public short getUtcDelta() {
+    @Nullable
+    public Short getUtcDelta() {
         return utcDelta;
     }
 
-    public byte getTimeZoneOffset() {
+    @Nullable
+    public Byte getTimeZoneOffset() {
         return timeZoneOffset;
     }
 
