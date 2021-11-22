@@ -8,6 +8,7 @@ import com.google.gson.reflect.TypeToken;
 
 import java.lang.reflect.Type;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -154,7 +155,7 @@ public class MeshTypeConverters {
 
     @TypeConverter
     public static String networkExclusionsToJson(@NonNull final Map<Integer, ArrayList<Integer>> networkExclusions) {
-        return new Gson().toJson(networkExclusions);
+        return new Gson().toJson(new HashMap<>(networkExclusions));
     }
 
     @TypeConverter
