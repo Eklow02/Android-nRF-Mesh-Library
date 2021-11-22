@@ -17,6 +17,7 @@ import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.stream.Collectors;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.RestrictTo;
@@ -25,6 +26,7 @@ import androidx.room.Room;
 import androidx.room.RoomDatabase;
 import androidx.room.migration.Migration;
 import androidx.sqlite.db.SupportSQLiteDatabase;
+
 import no.nordicsemi.android.mesh.data.ApplicationKeyDao;
 import no.nordicsemi.android.mesh.data.ApplicationKeysDao;
 import no.nordicsemi.android.mesh.data.GroupDao;
@@ -195,7 +197,7 @@ abstract class MeshNetworkDb extends RoomDatabase {
         databaseWriteExecutor.execute(() -> dao.update(network.meshUUID, network.meshName, network.timestamp,
                 network.partial, MeshTypeConverters.ivIndexToJson(network.ivIndex),
                 network.lastSelected,
-                MeshTypeConverters.networkExclusionsToJson(network.networkExclusions)));
+                MeshTypeConverters.networkExclusionsToJson(new HashMap<>(network.networkExclusions))));
     }
 
     void update(@NonNull final MeshNetworkDao dao, @NonNull final MeshNetwork meshNetwork, final boolean lastSelected) throws ExecutionException, InterruptedException {
@@ -217,14 +219,14 @@ abstract class MeshNetworkDb extends RoomDatabase {
         databaseWriteExecutor.execute(() -> {
             networkDao.update(network.meshUUID, network.meshName, network.timestamp,
                     network.partial, MeshTypeConverters.ivIndexToJson(network.ivIndex),
-                    network.lastSelected,
+                     network.lastSelected,
                     MeshTypeConverters.networkExclusionsToJson(network.networkExclusions));
-            netKeyDao.update(network.getNetKeys());
-            appKeyDao.update(network.getAppKeys());
-            provisionersDao.update(network.getProvisioners());
-            nodesDao.update(network.getNodes());
-            groupsDao.update(network.getGroups());
-            sceneDao.update(network.getScenes());
+            netKeyDao.update(new ArrayList<>(network.getNetKeys()));
+            appKeyDao.update(new ArrayList<>(network.getAppKeys()));
+            provisionersDao.update(new ArrayList<>(network.getProvisioners()));
+            nodesDao.update(new ArrayList<>(network.getNodes()));
+            groupsDao.update(new ArrayList<>(network.getGroups()));
+            sceneDao.update(new ArrayList<>(network.getScenes()));
         });
     }
 
