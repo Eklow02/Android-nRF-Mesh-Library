@@ -395,7 +395,9 @@ abstract class LowerTransportLayer extends UpperTransportLayer {
                 return null;
             }
             mMeshNode.setSeqAuth(srcAdd, seqAuth);
-            mMeshNode.setSequenceNumber(MeshParserUtils.convert24BitsToInt(sequenceNumber));
+            // We do not need to rely on the sequence number here
+            // Setting hte sequence number here will reset the already incremented sequence number for a message sent to all nodes.
+            // mMeshNode.setSequenceNumber(MeshParserUtils.convert24BitsToInt(sequenceNumber));
             message = new AccessMessage();
             if (akf == 0) {// device key was used to encrypt
                 final int lowerTransportPduLength = pdu.length - 10;
@@ -471,7 +473,9 @@ abstract class LowerTransportLayer extends UpperTransportLayer {
 
         //Check if the current SeqAuth value is greater than the last and if the incomplete timer has not started, start it!
         if ((lastSeqAuth == null || lastSeqAuth < seqAuth)) {
-            mMeshNode.setSequenceNumber(seqNumber);
+            // We do not need to rely on the sequence number here
+            // Setting hte sequence number here will reset the already incremented sequence number for a message sent to all nodes.
+            // mMeshNode.setSequenceNumber(seqNumber);
             segmentedAccessMessageMap.clear();
             segmentedAccessMessageMap.put(segO, payloadBuffer.array());
             mMeshNode.setSeqAuth(blockAckDst, seqAuth);
@@ -498,12 +502,12 @@ abstract class LowerTransportLayer extends UpperTransportLayer {
                     //Add +1 to segN since its zero based
                     if (receivedSegmentedMessageCount != (segN + 1)) {
                         restartIncompleteTimer();
+                        mSegmentedAccessBlockAck = BlockAcknowledgementMessage.calculateBlockAcknowledgement(mSegmentedAccessBlockAck, segO);
                         Log.v(TAG, "Restarting incomplete timer for src: " + MeshAddress.formatAddress(blockAckDst, false));
 
                         //Start acknowledgement calculation and timer only for messages directed to a unicast address.
                         //We also have to make sure we restart the acknowledgement timer only if the acknowledgement timer is not active and the incomplete timer is active
                         if (MeshAddress.isValidUnicastAddress(dst) && !mSegmentedAccessAcknowledgementTimerStarted) {
-                            mSegmentedAccessBlockAck = BlockAcknowledgementMessage.calculateBlockAcknowledgement(mSegmentedAccessBlockAck, segO);
                             Log.v(TAG, "Restarting block acknowledgement timer for src: " + MeshAddress.formatAddress(blockAckDst, false));
                             //Start the block acknowledgement timer irrespective of which segment was received first
                             initSegmentedAccessAcknowledgementTimer(seqZero, ttl, blockAckSrc, blockAckDst, segN);
