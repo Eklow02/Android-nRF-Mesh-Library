@@ -480,6 +480,23 @@ abstract class LowerTransportLayer extends UpperTransportLayer {
             segmentedAccessMessageMap.put(segO, payloadBuffer.array());
             mMeshNode.setSeqAuth(blockAckDst, seqAuth);
 
+            if((segO==0) && (segN == 0)){
+                // This is the first and last segment
+                handleImmediateBlockAcks(seqZero, ttl, blockAckSrc, blockAckDst, segN);
+
+                final int upperTransportSequenceNumber = getTransportLayerSequenceNumber(MeshParserUtils.getSequenceNumberFromPDU(pdu), seqZero);
+                final AccessMessage accessMessage = new AccessMessage();
+                accessMessage.setAszmic(szmic);
+                accessMessage.setSequenceNumber(MeshParserUtils.getSequenceNumberBytes(upperTransportSequenceNumber));
+                accessMessage.setAkf(akf);
+                accessMessage.setAid(aid);
+                accessMessage.setSegmented(true);
+                final SparseArray<byte[]> segmentedMessages = segmentedAccessMessageMap.clone();
+                accessMessage.setLowerTransportAccessPdu(segmentedMessages);
+                return accessMessage;
+            }
+
+
             Log.v(TAG, "Starting incomplete timer for src: " + MeshAddress.formatAddress(blockAckDst, false));
             initIncompleteTimer();
 
