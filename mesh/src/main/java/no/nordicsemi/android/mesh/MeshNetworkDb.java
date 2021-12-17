@@ -146,19 +146,19 @@ abstract class MeshNetworkDb extends RoomDatabase {
         databaseWriteExecutor.execute(() -> {
 
             meshNetworkDao.insert(meshNetwork);
-            netKeysDao.insert(meshNetwork.netKeys);
-            appKeysDao.insert(meshNetwork.appKeys);
-            provisionersDao.insert(meshNetwork.provisioners);
+            netKeysDao.insert(new ArrayList<>(meshNetwork.netKeys));
+            appKeysDao.insert(new ArrayList<>(meshNetwork.appKeys));
+            provisionersDao.insert(new ArrayList<>(meshNetwork.provisioners));
             if (!meshNetwork.nodes.isEmpty()) {
-                nodesDao.insert(meshNetwork.nodes);
+                nodesDao.insert(new ArrayList<>(meshNetwork.nodes));
             }
 
             if (meshNetwork.groups != null) {
-                groupsDao.insert(meshNetwork.groups);
+                groupsDao.insert(new ArrayList<>(meshNetwork.groups));
             }
 
             if (meshNetwork.scenes != null) {
-                scenesDao.insert(meshNetwork.scenes);
+                scenesDao.insert(new ArrayList<>(meshNetwork.scenes));
             }
         });
     }
