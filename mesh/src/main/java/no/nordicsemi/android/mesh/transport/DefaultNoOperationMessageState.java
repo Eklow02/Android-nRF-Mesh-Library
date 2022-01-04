@@ -569,7 +569,7 @@ class DefaultNoOperationMessageState extends MeshMessageState {
     @SuppressWarnings("BooleanMethodIsAlwaysInverted")
     private boolean isReceivedViaProxyFilter(@NonNull final Message message) {
         final ProxyFilter filter = mInternalTransportCallbacks.getProxyFilter();
-        if (filter != null) {
+        if (filter != null && !filter.getAddresses().isEmpty()) {
             if (filter.getFilterType().getType() == ProxyFilterType.INCLUSION_LIST_FILTER) {
                 return filterAddressMatches(filter, message.getDst());
             } else {
