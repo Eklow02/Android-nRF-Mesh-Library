@@ -28,6 +28,9 @@ import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.security.Security;
@@ -40,8 +43,6 @@ import java.util.Locale;
 import java.util.Map.Entry;
 import java.util.UUID;
 
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
 import no.nordicsemi.android.mesh.data.ApplicationKeyDao;
 import no.nordicsemi.android.mesh.data.ApplicationKeysDao;
 import no.nordicsemi.android.mesh.data.GroupDao;
@@ -229,7 +230,8 @@ public class MeshManagerApi implements MeshMngrApi {
                 mProvisionersDao,
                 mProvisionedNodesDao,
                 mGroupsDao, mScenesDao,
-                meshNetwork);
+                meshNetwork,
+                networkLoadCallbacks);
     }
 
     @Override
@@ -793,8 +795,6 @@ public class MeshManagerApi implements MeshMngrApi {
         final MeshNetwork newMeshNetwork = generateMeshNetwork();
         newMeshNetwork.setCallbacks(callbacks);
         insertNetwork(newMeshNetwork);
-        mMeshNetwork = newMeshNetwork;
-        mMeshManagerCallbacks.onNetworkLoaded(newMeshNetwork);
     }
 
     private MeshNetwork generateMeshNetwork() {
@@ -933,8 +933,6 @@ public class MeshManagerApi implements MeshMngrApi {
             }
             mMeshNetworkDb.update(mMeshNetworkDao, importedNetwork, false);
             insertNetwork(importedNetwork);
-            mMeshNetwork = importedNetwork;
-            mMeshManagerCallbacks.onNetworkImported(importedNetwork);
             isNetworkImportInProgress = false;
         } catch (Exception ex) {
             isNetworkImportInProgress = false;
@@ -1161,17 +1159,27 @@ public class MeshManagerApi implements MeshMngrApi {
         @Override
         public void onNetworkLoadedFromDb(final MeshNetwork meshNetwork) {
             final MeshNetwork network;
-            //If there is no network we generate a new one
-            if (meshNetwork == null) {
-                network = generateMeshNetwork();
-                insertNetwork(network);
-            } else {
+            if (meshNetwork != null) {
                 network = meshNetwork;
                 network.loadSequenceNumbers();
+                network.setCallbacks(callbacks);
+
+                mMeshNetwork = network;
+                mMeshManagerCallbacks.onNetworkLoaded(network);
+            } else {
+                insertNetwork(generateMeshNetwork());
             }
-            network.setCallbacks(callbacks);
-            mMeshNetwork = network;
-            mMeshManagerCallbacks.onNetworkLoaded(network);
+        }
+
+        @Override
+        public void onNetworkCreated(MeshNetwork meshNetwork) {
+            if (meshNetwork != null) {
+                meshNetwork.loadSequenceNumbers();
+                meshNetwork.setCallbacks(callbacks);
+
+                mMeshNetwork = meshNetwork;
+                mMeshManagerCallbacks.onNetworkLoaded(meshNetwork);
+            }
         }
 
         @Override
