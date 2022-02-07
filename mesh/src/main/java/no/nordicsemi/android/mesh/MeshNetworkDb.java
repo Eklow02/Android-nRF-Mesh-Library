@@ -7,6 +7,14 @@ import android.database.sqlite.SQLiteDatabase;
 import android.util.Log;
 import android.util.SparseIntArray;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.RestrictTo;
+import androidx.room.Database;
+import androidx.room.Room;
+import androidx.room.RoomDatabase;
+import androidx.room.migration.Migration;
+import androidx.sqlite.db.SupportSQLiteDatabase;
+
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.HashMap;
@@ -17,15 +25,6 @@ import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.stream.Collectors;
-
-import androidx.annotation.NonNull;
-import androidx.annotation.RestrictTo;
-import androidx.room.Database;
-import androidx.room.Room;
-import androidx.room.RoomDatabase;
-import androidx.room.migration.Migration;
-import androidx.sqlite.db.SupportSQLiteDatabase;
 
 import no.nordicsemi.android.mesh.data.ApplicationKeyDao;
 import no.nordicsemi.android.mesh.data.ApplicationKeysDao;
@@ -142,7 +141,8 @@ abstract class MeshNetworkDb extends RoomDatabase {
                        @NonNull final ProvisionedMeshNodesDao nodesDao,
                        @NonNull final GroupsDao groupsDao,
                        @NonNull final ScenesDao scenesDao,
-                       @NonNull final MeshNetwork meshNetwork) {
+                       @NonNull final MeshNetwork meshNetwork,
+                       @NonNull final LoadNetworkCallbacks listener) {
         databaseWriteExecutor.execute(() -> {
 
             meshNetworkDao.insert(meshNetwork);
@@ -160,6 +160,14 @@ abstract class MeshNetworkDb extends RoomDatabase {
             if (meshNetwork.scenes != null) {
                 scenesDao.insert(new ArrayList<>(meshNetwork.scenes));
             }
+
+            meshNetwork.netKeys = netKeysDao.loadNetworkKeys(meshNetwork.getMeshUUID());
+            meshNetwork.appKeys = appKeysDao.loadApplicationKeys(meshNetwork.getMeshUUID());
+            meshNetwork.nodes = nodesDao.getNodes(meshNetwork.getMeshUUID());
+            meshNetwork.provisioners = provisionersDao.getProvisioners(meshNetwork.getMeshUUID());
+            meshNetwork.groups = groupsDao.loadGroups(meshNetwork.getMeshUUID());
+            meshNetwork.scenes = scenesDao.loadScenes(meshNetwork.getMeshUUID());
+            listener.onNetworkCreated(meshNetwork);
         });
     }
 
