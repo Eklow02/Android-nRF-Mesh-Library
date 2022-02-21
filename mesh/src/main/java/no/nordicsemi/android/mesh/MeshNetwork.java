@@ -364,6 +364,35 @@ public final class MeshNetwork extends BaseMeshNetwork {
         return null;
     }
 
+    /**
+     * Returns the next available group  address for a provisioner based on the allocated group range
+     *
+     * @param provisioner {@link Provisioner}
+     * @return Group address
+     * @throws IllegalStateException if there is no allocated group range to this provisioner
+     */
+    public Integer nextAvailableGroupAddress(@NonNull final Provisioner provisioner, @NonNull final AllocatedGroupRange allocatedGroupRange) throws IllegalStateException {
+        if (!provisioner.getAllocatedGroupRanges().contains(allocatedGroupRange)) {
+            throw new IllegalArgumentException("Group range does not belong to provisioner.");
+        }
+
+        Collections.sort(groups, groupComparator);
+        for (AllocatedGroupRange range : provisioner.getAllocatedGroupRanges()) {
+            //If the list of groups are empty we can start with the lowest address of the range
+            if (groups.isEmpty()) {
+                return range.getLowAddress();
+            }
+
+            for (int address = range.lowAddress; address < range.getHighAddress(); address++) {
+                //if the address is not in use, return it as the next available address to create a group
+                if (!isGroupAddressInUse(address)) {
+                    return address;
+                }
+            }
+        }
+        return null;
+    }
+
     private boolean isGroupAddressInUse(final int address) {
         for (Group group : groups) {
             //if the address is not in use, return it as the next available address to create a group
