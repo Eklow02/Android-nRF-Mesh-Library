@@ -3,16 +3,17 @@ package no.nordicsemi.android.mesh;
 
 import android.text.TextUtils;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.annotation.RestrictTo;
+import androidx.room.Entity;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
-import androidx.annotation.RestrictTo;
-import androidx.room.Entity;
 import no.nordicsemi.android.mesh.transport.Element;
 import no.nordicsemi.android.mesh.transport.MeshModel;
 import no.nordicsemi.android.mesh.transport.ProvisionedMeshNode;
@@ -377,19 +378,18 @@ public final class MeshNetwork extends BaseMeshNetwork {
         }
 
         Collections.sort(groups, groupComparator);
-        for (AllocatedGroupRange range : provisioner.getAllocatedGroupRanges()) {
-            //If the list of groups are empty we can start with the lowest address of the range
-            if (groups.isEmpty()) {
-                return range.getLowAddress();
-            }
+        //If the list of groups are empty we can start with the lowest address of the range
+        if (groups.isEmpty()) {
+            return allocatedGroupRange.getLowAddress();
+        }
 
-            for (int address = range.lowAddress; address < range.getHighAddress(); address++) {
-                //if the address is not in use, return it as the next available address to create a group
-                if (!isGroupAddressInUse(address)) {
-                    return address;
-                }
+        for (int address = allocatedGroupRange.lowAddress; address < allocatedGroupRange.getHighAddress(); address++) {
+            //if the address is not in use, return it as the next available address to create a group
+            if (!isGroupAddressInUse(address)) {
+                return address;
             }
         }
+
         return null;
     }
 
@@ -415,6 +415,26 @@ public final class MeshNetwork extends BaseMeshNetwork {
         }
 
         final Integer address = nextAvailableGroupAddress(provisioner);
+        if (address != null) {
+            final Group group = new Group(address, meshUUID);
+            group.setName(name);
+            return group;
+        }
+        return null;
+    }
+
+    /**
+     * Creates a group using the next available group address based on the provisioners allocated group range
+     *
+     * @param provisioner provisioner
+     * @return a group or null if creation failed
+     */
+    public Group createGroup(@NonNull final Provisioner provisioner, @NonNull final String name, @NonNull final AllocatedGroupRange allocatedGroupRange) {
+        if (TextUtils.isEmpty(name)) {
+            throw new IllegalArgumentException("Group name cannot be empty");
+        }
+
+        final Integer address = nextAvailableGroupAddress(provisioner, allocatedGroupRange);
         if (address != null) {
             final Group group = new Group(address, meshUUID);
             group.setName(name);
