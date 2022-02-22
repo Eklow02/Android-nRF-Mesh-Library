@@ -339,21 +339,18 @@ public class Provisioner implements Parcelable {
             allocatedUnicastRanges.add((AllocatedUnicastRange) allocatedRange);
             final ArrayList<AllocatedUnicastRange> ranges = new ArrayList<>(allocatedUnicastRanges);
             Collections.sort(ranges, addressRangeComparator);
-            allocatedUnicastRanges.clear();
             allocatedUnicastRanges.addAll(Range.mergeUnicastRanges(ranges));
             return true;
         } else if (allocatedRange instanceof AllocatedGroupRange) {
             allocatedGroupRanges.add((AllocatedGroupRange) allocatedRange);
             final ArrayList<AllocatedGroupRange> ranges = new ArrayList<>(allocatedGroupRanges);
             Collections.sort(ranges, addressRangeComparator);
-            allocatedGroupRanges.clear();
             allocatedGroupRanges.addAll(Range.mergeGroupRanges(ranges));
             return true;
         } else if (allocatedRange instanceof AllocatedSceneRange) {
             allocatedSceneRanges.add((AllocatedSceneRange) allocatedRange);
             final ArrayList<AllocatedSceneRange> ranges = new ArrayList<>(allocatedSceneRanges);
             Collections.sort(allocatedSceneRanges, sceneRangeComparator);
-            allocatedSceneRanges.clear();
             allocatedSceneRanges.addAll(Range.mergeSceneRanges(ranges));
             return true;
         }

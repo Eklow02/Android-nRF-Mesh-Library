@@ -373,7 +373,7 @@ public final class MeshNetwork extends BaseMeshNetwork {
      * @throws IllegalStateException if there is no allocated group range to this provisioner
      */
     public Integer nextAvailableGroupAddress(@NonNull final Provisioner provisioner, @NonNull final AllocatedGroupRange allocatedGroupRange) throws IllegalStateException {
-        if (!provisioner.getAllocatedGroupRanges().contains(allocatedGroupRange)) {
+        if (!provisioner.allocatedGroupRanges.contains(allocatedGroupRange)) {
             throw new IllegalArgumentException("Group range does not belong to provisioner.");
         }
 
@@ -511,13 +511,13 @@ public final class MeshNetwork extends BaseMeshNetwork {
         //We check if the group is made of a virtual address
         if (group.getAddressLabel() == null) {
             for (AllocatedGroupRange range : provisioner.getAllocatedGroupRanges()) {
-                if (range.getLowAddress() > group.getAddress() || range.getHighAddress() < group.getAddress()) {
-                    throw new IllegalArgumentException("Unable to create group, " +
-                            "the address is outside the range allocated to the provisioner");
+                if (group.getAddress()  >= range.getLowAddress() && group.getAddress() <= range.getHighAddress()) {
+                    return insertGroup(group);
                 }
             }
         }
-        return insertGroup(group);
+        throw new IllegalArgumentException("Unable to create group, " +
+                "the address is outside the range allocated to the provisioner");
     }
 
     private boolean insertGroup(@NonNull final Group group) {
