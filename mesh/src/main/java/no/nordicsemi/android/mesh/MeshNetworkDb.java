@@ -148,19 +148,19 @@ abstract class MeshNetworkDb extends RoomDatabase {
         databaseWriteExecutor.execute(() -> {
 
             meshNetworkDao.insert(meshNetwork);
-            netKeysDao.insert(meshNetwork.getNetKeys());
-            appKeysDao.insert(meshNetwork.getAppKeys());
-            provisionersDao.insert(meshNetwork.getProvisioners());
+            netKeysDao.insert(new ArrayList<>(meshNetwork.getNetKeys()));
+            appKeysDao.insert(new ArrayList<>(meshNetwork.getAppKeys()));
+            provisionersDao.insert(new ArrayList<>(meshNetwork.getProvisioners()));
             if (!meshNetwork.nodes.isEmpty()) {
-                nodesDao.insert(meshNetwork.getNodes());
+                nodesDao.insert(new ArrayList<>(meshNetwork.getNodes()));
             }
 
             if (meshNetwork.groups != null) {
-                groupsDao.insert(meshNetwork.getGroups());
+                groupsDao.insert(new ArrayList<>(meshNetwork.getGroups()));
             }
 
             if (meshNetwork.scenes != null) {
-                scenesDao.insert(meshNetwork.getScenes());
+                scenesDao.insert(new ArrayList<>(meshNetwork.getScenes()));
             }
 
             meshNetwork.netKeys = netKeysDao.loadNetworkKeys(meshNetwork.getMeshUUID());
@@ -231,12 +231,12 @@ abstract class MeshNetworkDb extends RoomDatabase {
                     network.partial, MeshTypeConverters.ivIndexToJson(network.ivIndex),
                      network.lastSelected,
                     MeshTypeConverters.networkExclusionsToJson(network.networkExclusions));
-            netKeyDao.update(network.getNetKeys());
-            appKeyDao.update(network.getAppKeys());
-            provisionersDao.update(network.getProvisioners());
-            nodesDao.update(network.getNodes());
-            groupsDao.update(network.getGroups());
-            sceneDao.update(network.getScenes());
+            netKeyDao.update(new ArrayList<>(network.getNetKeys()));
+            appKeyDao.update(new ArrayList<>(network.getAppKeys()));
+            provisionersDao.update(new ArrayList<>(network.getProvisioners()));
+            nodesDao.update(new ArrayList<>(network.getNodes()));
+            groupsDao.update(new ArrayList<>(network.getGroups()));
+            sceneDao.update(new ArrayList<>(network.getScenes()));
         });
     }
 
