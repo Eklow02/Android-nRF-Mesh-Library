@@ -339,7 +339,6 @@ public class Provisioner implements Parcelable, Cloneable {
             allocatedUnicastRanges.add((AllocatedUnicastRange) newAllocatedRange);
             final ArrayList<AllocatedUnicastRange> ranges = new ArrayList<>(allocatedUnicastRanges);
             Collections.sort(ranges, addressRangeComparator);
-            allocatedUnicastRanges.clear();
             allocatedUnicastRanges.addAll(Range.mergeUnicastRanges(ranges));
             return true;
         } else if (allocatedRange instanceof AllocatedGroupRange) {
@@ -347,7 +346,6 @@ public class Provisioner implements Parcelable, Cloneable {
             allocatedGroupRanges.add(newAllocatedRange);
             final ArrayList<AllocatedGroupRange> ranges = new ArrayList<>(allocatedGroupRanges);
             Collections.sort(ranges, addressRangeComparator);
-            allocatedGroupRanges.clear();
             allocatedGroupRanges.addAll(Range.mergeGroupRanges(ranges));
             return true;
         } else if (allocatedRange instanceof AllocatedSceneRange) {
@@ -355,7 +353,6 @@ public class Provisioner implements Parcelable, Cloneable {
             allocatedSceneRanges.add(newAllocatedRange);
             final ArrayList<AllocatedSceneRange> ranges = new ArrayList<>(allocatedSceneRanges);
             Collections.sort(allocatedSceneRanges, sceneRangeComparator);
-            allocatedSceneRanges.clear();
             allocatedSceneRanges.addAll(Range.mergeSceneRanges(ranges));
             return true;
         }

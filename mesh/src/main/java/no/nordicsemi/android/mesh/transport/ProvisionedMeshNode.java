@@ -99,12 +99,6 @@ public final class ProvisionedMeshNode extends ProvisionedBaseMeshNode {
         deviceKey = node.getDeviceKey();
         ttl = node.getTtl();
         mTimeStampInMillis = node.getTimeStamp();
-        // Here we add some dummy elements with empty models to occupy the addresses in use.
-        if (mElements.isEmpty()) {
-            for(int i = 0; i < node.getProvisioningCapabilities().getNumberOfElements(); i++){
-                mElements.put(unicastAddress + i, new Element(unicastAddress + i, 0, new HashMap<>()));
-            }
-        }
     }
 
     /**
