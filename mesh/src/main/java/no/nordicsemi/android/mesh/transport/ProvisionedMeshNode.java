@@ -91,7 +91,7 @@ public final class ProvisionedMeshNode extends ProvisionedBaseMeshNode {
     @RestrictTo(RestrictTo.Scope.LIBRARY)
     public ProvisionedMeshNode(final UnprovisionedMeshNode node) {
         uuid = node.getDeviceUuid().toString();
-        //isConfigured = node.isConfigured();
+        isConfigured = node.isConfigured();
         nodeName = node.getNodeName();
         mAddedNetKeys.add(new NodeKey(node.getKeyIndex()));
         mFlags = node.getFlags();
@@ -100,8 +100,10 @@ public final class ProvisionedMeshNode extends ProvisionedBaseMeshNode {
         ttl = node.getTtl();
         mTimeStampInMillis = node.getTimeStamp();
         // Here we add some dummy elements with empty models to occupy the addresses in use.
-        for(int i = 0; i < node.getProvisioningCapabilities().getNumberOfElements(); i++){
-            mElements.put(unicastAddress + i, new Element(unicastAddress + i, 0, new HashMap<>()));
+        if (mElements.isEmpty()) {
+            for(int i = 0; i < node.getProvisioningCapabilities().getNumberOfElements(); i++){
+                mElements.put(unicastAddress + i, new Element(unicastAddress + i, 0, new HashMap<>()));
+            }
         }
     }
 
@@ -120,7 +122,7 @@ public final class ProvisionedMeshNode extends ProvisionedBaseMeshNode {
                                @NonNull final List<ApplicationKey> appKeys) {
         this.meshUuid = provisioner.getMeshUuid();
         uuid = provisioner.getProvisionerUuid();
-        //isConfigured = true;
+        isConfigured = true;
         nodeName = provisioner.getProvisionerName();
         for (NetworkKey key : netKeys) {
             mAddedNetKeys.add(new NodeKey(key.getKeyIndex(), false));
