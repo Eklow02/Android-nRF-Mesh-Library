@@ -207,7 +207,7 @@ abstract class MeshNetworkDb extends RoomDatabase {
         databaseWriteExecutor.execute(() -> dao.update(network.meshUUID, network.meshName, network.timestamp,
                 network.partial, MeshTypeConverters.ivIndexToJson(network.ivIndex),
                 network.lastSelected,
-                MeshTypeConverters.networkExclusionsToJson(new HashMap<>(network.networkExclusions))));
+                MeshTypeConverters.networkExclusionsToJson(network.getNetworkExclusions())));
     }
 
     void update(@NonNull final MeshNetworkDao dao, @NonNull final MeshNetwork meshNetwork, final boolean lastSelected) throws ExecutionException, InterruptedException {
@@ -229,14 +229,14 @@ abstract class MeshNetworkDb extends RoomDatabase {
         databaseWriteExecutor.execute(() -> {
             networkDao.update(network.meshUUID, network.meshName, network.timestamp,
                     network.partial, MeshTypeConverters.ivIndexToJson(network.ivIndex),
-                     network.lastSelected,
-                    MeshTypeConverters.networkExclusionsToJson(network.networkExclusions));
-            netKeyDao.update(new ArrayList<>(network.getNetKeys()));
-            appKeyDao.update(new ArrayList<>(network.getAppKeys()));
-            provisionersDao.update(new ArrayList<>(network.getProvisioners()));
-            nodesDao.update(new ArrayList<>(network.getNodes()));
-            groupsDao.update(new ArrayList<>(network.getGroups()));
-            sceneDao.update(new ArrayList<>(network.getScenes()));
+                    network.lastSelected,
+                    MeshTypeConverters.networkExclusionsToJson(network.getNetworkExclusions()));
+            netKeyDao.update(network.getNetKeys());
+            appKeyDao.update(network.getAppKeys());
+            provisionersDao.update(network.getProvisioners());
+            nodesDao.update(new ArrayList<>(network.nodes));
+            groupsDao.update(network.getGroups());
+            sceneDao.update(network.getScenes());
         });
     }
 
