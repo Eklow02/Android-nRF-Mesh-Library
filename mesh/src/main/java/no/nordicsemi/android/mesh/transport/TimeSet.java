@@ -39,8 +39,10 @@ public class TimeSet extends ApplicationMessage {
     void assembleMessageParameters() {
         mAid = SecureUtils.calculateK4(mAppKey.getKey());
         BitWriter bitWriter = new BitWriter(TIME_BIT_SIZE);
+
         // The state is a uint8 value representing the valid range of -64 through +191 (i.e., 0x40 represents a value of 0 and 0xFF represents a value of 191).
         bitWriter.write(taiTime.getTimeZoneOffset() + TIME_ZONE_START_RANGE, TIME_ZONE_OFFSET_BIT_SIZE);
+
         // The valid range is -255 through +32512 (i.e., 0x00FF represents a value of 0 and 0x7FFF represents a value of 32512).
         bitWriter.write(taiTime.getUtcDelta() + UTC_DELTA_START_RANGE, UTC_DELTA_BIT_SIZE);
         if (taiTime.isTimeAuthority()) {

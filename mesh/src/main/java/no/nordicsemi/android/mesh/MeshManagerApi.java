@@ -221,8 +221,8 @@ public class MeshManagerApi implements MeshMngrApi {
     private void insertNetwork(final MeshNetwork meshNetwork) {
         meshNetwork.setLastSelected(true);
         //If there is only one provisioner we default to the zeroth
-        if (meshNetwork.provisioners.size() == 1) {
-            meshNetwork.provisioners.get(0).setLastSelected(true);
+        if (meshNetwork.getProvisioners().size() == 1) {
+            meshNetwork.getProvisioners().get(0).setLastSelected(true);
         }
         mMeshNetworkDb.insertNetwork(mMeshNetworkDao,
                 mNetworkKeysDao,
@@ -293,7 +293,7 @@ public class MeshManagerApi implements MeshMngrApi {
                         final int flags = receivedBeacon.getFlags();
                         final byte[] networkId = SecureUtils.calculateK3(n);
                         final int ivIndex = receivedBeacon.getIvIndex().getIvIndex();
-                        Log.d(TAG, "Received mesh beacon: " + receivedBeacon.toString());
+                        Log.d(TAG, "Received mesh beacon: " + receivedBeacon);
 
                         final SecureNetworkBeacon localSecureNetworkBeacon = SecureUtils.createSecureNetworkBeacon(n, flags, networkId, ivIndex);
                         //Check the the beacon received is a valid by matching the authentication values
@@ -355,9 +355,9 @@ public class MeshManagerApi implements MeshMngrApi {
                             }
 
                             if (!mMeshNetwork.ivIndex.getIvRecoveryFlag()) {
-                                final Iterator<Entry<Integer, ArrayList<Integer>>> iterator = mMeshNetwork.networkExclusions.entrySet().iterator();
+                                final Iterator<Entry<Integer, List<Integer>>> iterator = mMeshNetwork.networkExclusions.entrySet().iterator();
                                 while (iterator.hasNext()) {
-                                    final Entry<Integer, ArrayList<Integer>> exclusions = iterator.next();
+                                    final Entry<Integer, List<Integer>> exclusions = iterator.next();
                                     final int expectedIncrement = exclusions.getKey() + 2;
                                     if (mMeshNetwork.ivIndex.getIvIndex() >= expectedIncrement) {
                                         // Clear the last known sequence number of addresses that are to be removed from the exclusion list.
@@ -922,7 +922,7 @@ public class MeshManagerApi implements MeshMngrApi {
             if (network != null) {
                 final List<ProvisionedMeshNode> nodes = mMeshNetworkDb.getNodes(mProvisionedNodesDao, importedNetwork.getMeshUUID());
                 importedNetwork.unicastAddress = network.unicastAddress;
-                for (ProvisionedMeshNode meshNode : importedNetwork.nodes) {
+                for (ProvisionedMeshNode meshNode : importedNetwork.getNodes()) {
                     for (ProvisionedMeshNode node : nodes) {
                         if (node.getUuid().equalsIgnoreCase(meshNode.getUuid())) {
                             meshNode.setSequenceNumber(node.getSequenceNumber());
@@ -993,15 +993,18 @@ public class MeshManagerApi implements MeshMngrApi {
         @Override
         public void onMeshNodeReset(final ProvisionedMeshNode meshNode) {
             if (meshNode != null) {
-                if (mMeshNetwork.deleteNode(meshNode)) {
-                    deleteNode(meshNode);
-                }
+                mMeshNetwork.deleteNode(meshNode);
             }
         }
 
         @Override
         public MeshNetwork getMeshNetwork() {
             return mMeshNetwork;
+        }
+
+        @Override
+        public void addGroup(final Group group) {
+            mMeshNetwork.addGroup(group);
         }
 
         @Override
@@ -1052,10 +1055,10 @@ public class MeshManagerApi implements MeshMngrApi {
     @SuppressWarnings("FieldCanBeLocal")
     private final InternalMeshManagerCallbacks internalMeshMgrCallbacks = new InternalMeshManagerCallbacks() {
         @Override
-        public void onNodeProvisioned(final ProvisionedMeshNode meshNode) {
+        public void onNodeProvisioned(final ProvisionedMeshNode meshNode, final int numberOfElements) {
             updateProvisionedNodeList(meshNode);
             mMeshNetwork.sequenceNumbers.put(meshNode.getUnicastAddress(), meshNode.getSequenceNumber());
-            mMeshNetwork.unicastAddress = mMeshNetwork.nextAvailableUnicastAddress(meshNode.getNumberOfElements(), mMeshNetwork.getSelectedProvisioner());
+            mMeshNetwork.unicastAddress = mMeshNetwork.nextAvailableUnicastAddress(numberOfElements, mMeshNetwork.getSelectedProvisioner());
             //Set the mesh network uuid to the node so we can identify nodes belonging to a network
             meshNode.setMeshUuid(mMeshNetwork.getMeshUUID());
             mMeshNetworkDb.insert(mProvisionedNodeDao, meshNode);
@@ -1145,7 +1148,6 @@ public class MeshManagerApi implements MeshMngrApi {
             return keys;
         }
 
-        @Nullable
         @Override
         public List<Group> gerVirtualGroups() {
             return mMeshNetwork.getGroups();
@@ -1270,12 +1272,22 @@ public class MeshManagerApi implements MeshMngrApi {
         @Override
         public void onProvisionerDeleted(@NonNull Provisioner provisioner) {
             mMeshNetworkDb.delete(mProvisionerDao, provisioner);
-            onMeshNetworkUpdated();
+            // Network update is invoked independent in the case of node deletion or provisioner deletion
+            // onMeshNetworkUpdated();
         }
 
         @Override
         public void onNodeDeleted(@NonNull final ProvisionedMeshNode meshNode) {
-            deleteNode(meshNode);
+            //deleteNode(meshNode);
+            deleteSceneAddress(meshNode.getUnicastAddress());
+            // We should not remove the last known sequence number when resetting a node.
+            // This should be kept until the current iv index has incremented by 2 and delete it when
+            // clearing the exclusion lists
+            // mMeshNetwork.sequenceNumbers.delete(meshNode.getUnicastAddress());
+            mMeshNetworkDb.deleteNode(mProvisionedNodeDao, meshNode);
+            mMeshMessageHandler.resetState(meshNode.getUnicastAddress());
+            // Network update is invoked independent in the case of node deletion or provisioner deletion
+            // mMeshNetworkDb.update(mMeshNetworkDao, mMeshNetwork);
         }
 
         @Override
@@ -1287,12 +1299,6 @@ public class MeshManagerApi implements MeshMngrApi {
         @Override
         public void onNodeUpdated(@NonNull final ProvisionedMeshNode meshNode) {
             mMeshNetworkDb.update(mProvisionedNodeDao, meshNode);
-            onMeshNetworkUpdated();
-        }
-
-        @Override
-        public void onNodesUpdated() {
-            mMeshNetworkDb.update(mProvisionedNodesDao, mMeshNetwork.nodes);
             onMeshNetworkUpdated();
         }
 

@@ -55,6 +55,26 @@ public class ApplicationMessageOpCodes {
     public static final int GENERIC_LEVEL_SET = 0x8206;
 
     /**
+     * Opcode for the "Generic Location Global Get" message
+     */
+    public static final int GENERIC_LOCATION_GLOBAL_GET = 0x8225;
+
+    /**
+     * Opcode for the "Generic Location Global Status" message
+     */
+    public static final int GENERIC_LOCATION_GLOBAL_STATUS = 0x40;
+
+    /**
+     * Opcode for the "Generic Location Global Set" message
+     */
+    public static final int GENERIC_LOCATION_GLOBAL_SET = 0x41;
+
+    /**
+     * Opcode for the "Generic Location Global Set Unacknowledged" message
+     */
+    public static final int GENERIC_LOCATION_GLOBAL_SET_UNACKNOWLEDGED = 0x42;
+
+    /**
      * Opcode for the "Generic Level Set Unacknowledged" message.
      */
     public static final int GENERIC_LEVEL_SET_UNACKNOWLEDGED = 0x8207;
@@ -255,62 +275,6 @@ public class ApplicationMessageOpCodes {
     public static final int SCENE_DELETE_UNACKNOWLEDGED = 0x829F;
 
     /**
-<<<<<<< HEAD
-     * Opcode for the "Scheduler Get" message
-     */
-    public static final int SCHEDULER_GET = 0x8249;
-
-    /**
-     * Opcode for the "Scheduler Status" message
-     */
-    public static final int SCHEDULER_STATUS = 0x824A;
-
-    /**
-     * Opcode for the "Scheduler Action Get" message
-     */
-    public static final int SCHEDULER_ACTION_GET = 0x8248;
-
-    /**
-     * Opcode for the "Scheduler Action Set" message
-     */
-    public static final int SCHEDULER_ACTION_SET = 0x60;
-
-    /**
-     * Opcode for the "Scheduler Action Status" message
-     */
-    public static final int SCHEDULER_ACTION_STATUS = 0x5F;
-
-    /**
-     * Opcode for the "Generic Default Transition Time Get" message
-     */
-    public static final int GENERIC_DEFAULT_TRANSITION_TIME_GET = 0x820D;
-
-    /**
-     * Opcode for the "Generic Default Transition Time Set" message
-     */
-    public static final int GENERIC_DEFAULT_TRANSITION_TIME_SET = 0x820E;
-
-    /**
-     * Opcode for the "Generic Default Transition Time Status" message
-     */
-    public static final int GENERIC_DEFAULT_TRANSITION_TIME_STATUS = 0x8210;
-
-    /**
-     * Opcode for the "OnPowerUp Get" message
-     */
-    public static final int GENERIC_ON_POWER_UP_GET = 0x8211;
-
-    /**
-     * Opcode for the "OnPowerUp Set" message
-     */
-    public static final int GENERIC_ON_POWER_UP_SET = 0x8213;
-
-    /**
-     * Opcode for the "OnPowerUp Status" message
-     */
-    public static final int GENERIC_ON_POWER_UP_STATUS = 0x8212;
-
-    /**
      * Opcode for the "Sensor Descriptor Get" message
      */
     public static final int SENSOR_DESCRIPTOR_GET = 0x8230;
@@ -400,19 +364,74 @@ public class ApplicationMessageOpCodes {
     public static final int SENSOR_SETTING_STATUS = 0x5B;
 
     /**
-     * Opcode for the "Time Get" message
+     * Opcode for the "Scheduler Get" message
      */
-    public static final int TIME_GET = 0x8237;
+    public static final int SCHEDULER_GET = 0x8249;
 
     /**
-     * Opcode for the "Time Set" message
+     * Opcode for the "Scheduler Status" message
      */
-    public static final int TIME_SET = 0x5C;
+    public static final int SCHEDULER_STATUS = 0x824A;
 
     /**
-     * Opcode for the "Time Status" message
+     * Opcode for the "Scheduler Action Get" message
      */
-    public static final int TIME_STATUS = 0x5D;
+    public static final int SCHEDULER_ACTION_GET = 0x8248;
+
+    /**
+     * Opcode for the "Scheduler Action Set" message
+     */
+    public static final int SCHEDULER_ACTION_SET = 0x60;
+
+    /**
+     * Opcode for the "Scheduler Action Status" message
+     */
+    public static final int SCHEDULER_ACTION_STATUS = 0x5F;
+
+    /**
+     * Opcode for the "Time Zone Get" message
+     */
+    public static final int TIME_ZONE_GET = 0x823B;
+
+    /**
+     * Opcode for the "Time Zone Set" message
+     */
+    public static final int TIME_ZONE_SET = 0x823C;
+
+    /**
+     * Opcode for the "Time Zone Status" message
+     */
+    public static final int TIME_ZONE_STATUS = 0x823D;
+
+    /**
+     * Opcode for the "Generic Default Transition Time Get" message
+     */
+    public static final int GENERIC_DEFAULT_TRANSITION_TIME_GET = 0x820D;
+
+    /**
+     * Opcode for the "Generic Default Transition Time Set" message
+     */
+    public static final int GENERIC_DEFAULT_TRANSITION_TIME_SET = 0x820E;
+
+    /**
+     * Opcode for the "Generic Default Transition Time Status" message
+     */
+    public static final int GENERIC_DEFAULT_TRANSITION_TIME_STATUS = 0x8210;
+
+    /**
+     * Opcode for the "OnPowerUp Get" message
+     */
+    public static final int GENERIC_ON_POWER_UP_GET = 0x8211;
+
+    /**
+     * Opcode for the "OnPowerUp Set" message
+     */
+    public static final int GENERIC_ON_POWER_UP_SET = 0x8213;
+
+    /**
+     * Opcode for the "OnPowerUp Status" message
+     */
+    public static final int GENERIC_ON_POWER_UP_STATUS = 0x8212;
 
     /**
      * Opcode for the "Generic Admin Property Status" message
@@ -443,4 +462,19 @@ public class ApplicationMessageOpCodes {
      * Opcode for the "Generic Manufacturer Property Set" message
      */
     public static final int GENERIC_MANUFACTURER_PROPERTY_SET = 0x44;
+
+    /**
+     * Opcode for the "Time Get" message
+     */
+    public static final int TIME_GET = 0x8237;
+
+    /**
+     * Opcode for the "Time Set" message
+     */
+    public static final int TIME_SET = 0x5C;
+
+    /**
+     * Opcode for the "Time Status" message
+     */
+    public static final int TIME_STATUS = 0x5D;
 }

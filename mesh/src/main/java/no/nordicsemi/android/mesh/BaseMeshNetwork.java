@@ -40,7 +40,7 @@ import no.nordicsemi.android.mesh.utils.SecureUtils;
 import static no.nordicsemi.android.mesh.NetworkKey.KeyRefreshPhase;
 import static no.nordicsemi.android.mesh.NetworkKey.KeyRefreshPhaseTransition;
 
-@SuppressWarnings({"WeakerAccess", "UnusedReturnValue"})
+@SuppressWarnings({"WeakerAccess", "UnusedReturnValue", "ComparatorCombinators", "unused"})
 abstract class BaseMeshNetwork {
     private static final String TAG = "BaseMeshNetwork";
     // Key refresh phases
@@ -117,7 +117,7 @@ abstract class BaseMeshNetwork {
     @NonNull
     @ColumnInfo(name = "network_exclusions", defaultValue = "{}")
     @Expose
-    protected Map<Integer, ArrayList<Integer>> networkExclusions = new HashMap<>();
+    protected Map<Integer, List<Integer>> networkExclusions = new HashMap<>();
     //Library related attributes
     @Ignore
     @ColumnInfo(name = "unicast_address")
@@ -678,6 +678,16 @@ abstract class BaseMeshNetwork {
      * @param meshKey {@link MeshKey}
      */
     public boolean isKeyInUse(@NonNull final MeshKey meshKey) {
+        // We should not allow deleting a network key that is bound to an application key.
+        // This would require deleting the application key that's bound to this network key before deleting network key.
+        if (meshKey instanceof NetworkKey) {
+            for (ApplicationKey applicationKey : appKeys) {
+                if (meshKey.getKeyIndex() == applicationKey.getBoundNetKeyIndex()) {
+                    throw new IllegalArgumentException("Please unbind " + meshKey.name + " from the " + applicationKey.name + " or delete the bound " + applicationKey.name + " first.");
+                }
+            }
+        }
+
         for (ProvisionedMeshNode node : nodes) {
             if (!node.getUuid().equalsIgnoreCase(getSelectedProvisioner().getProvisionerUuid())) {
                 final int index = meshKey.getKeyIndex();
@@ -941,6 +951,8 @@ abstract class BaseMeshNetwork {
             }
             if (provisioner.isLastSelected()) {
                 selectProvisioner(provisioner);
+            } else {
+                notifyProvisionerUpdated(provisioner);
             }
             return true;
         }
@@ -972,7 +984,8 @@ abstract class BaseMeshNetwork {
      * @return true if the provisioner was deleted or false otherwise
      */
     public boolean removeProvisioner(@NonNull final Provisioner provisioner) {
-        if (provisioners.remove(provisioner)) {
+        return removeProvisionerAndNode(getNode(provisioner.getProvisionerAddress()), provisioner);
+        /*if (provisioners.remove(provisioner)) {
             notifyProvisionerDeleted(provisioner);
             if (provisioner.getProvisionerAddress() != null) {
                 final ProvisionedMeshNode node = getNode(provisioner.getProvisionerAddress());
@@ -983,7 +996,7 @@ abstract class BaseMeshNetwork {
             }
             return true;
         }
-        return false;
+        return false;*/
     }
 
     /**
@@ -998,7 +1011,7 @@ abstract class BaseMeshNetwork {
                 prov.setLastSelected(false);
             }
         }
-        notifyProvisionersUpdated(provisioners);
+        notifyProvisionersUpdated(getProvisioners());
     }
 
     /**
@@ -1095,7 +1108,9 @@ abstract class BaseMeshNetwork {
      *
      * @param unicastAddress unicast address of the node
      */
-    public ProvisionedMeshNode getNode(final int unicastAddress) {
+    public ProvisionedMeshNode getNode(final Integer unicastAddress) {
+        if(unicastAddress == null)
+            return null;
         for (ProvisionedMeshNode node : nodes) {
             if (node.hasUnicastAddress(unicastAddress)) {
                 return node;
@@ -1137,6 +1152,62 @@ abstract class BaseMeshNetwork {
     }
 
     /**
+     * Adds a mesh node to the list of provisioned nodes
+     *
+     * <p>
+     * Note that This method should only be used to add debug Nodes, or Nodes
+     * that have already been provisioned.
+     * </p>
+     *
+     * @param meshNode node to be added
+     * @return true if added and false otherwise
+     */
+    public boolean addNode(@NonNull final ProvisionedMeshNode meshNode) {
+        ProvisionedMeshNode sameAddressNode = getNode(meshNode.getUnicastAddress());
+        if (sameAddressNode != null) {
+            throw new IllegalStateException("cant add node with conflicting unicast address");
+        }
+        boolean hasMatchingNetKey = false;
+        for (NodeKey nodeKey : meshNode.getAddedNetKeys()) {
+            for (NetworkKey networkKey : netKeys) {
+                hasMatchingNetKey = nodeKey.getIndex() == networkKey.getKeyIndex();
+                if (hasMatchingNetKey) break;
+            }
+            if (hasMatchingNetKey) break;
+        }
+        if (!hasMatchingNetKey) {
+            throw new IllegalStateException("Network key added to the node is not a part of the mesh network");
+        }
+
+        boolean hasMatchingAppKey = false;
+        for (NodeKey nodeKey : meshNode.getAddedAppKeys()) {
+            for (ApplicationKey appKey : appKeys) {
+                hasMatchingAppKey = nodeKey.getIndex() == appKey.getKeyIndex();
+                if (hasMatchingAppKey) break;
+            }
+            if (hasMatchingAppKey) break;
+        }
+        if (!hasMatchingAppKey) {
+            throw new IllegalStateException("Application key added to the node is not a part of the mesh network");
+        }
+
+        int index = 0;
+        for (ProvisionedMeshNode node : nodes) {
+            if (node.getUuid().equalsIgnoreCase(meshNode.getUuid())) {
+                nodes.set(index, meshNode); //replace a node if uuid matches
+                notifyNodeUpdated(meshNode);
+                return true;
+            }
+            index++;
+        }
+        if (nodes.add(meshNode)) {
+            notifyNodeAdded(meshNode);
+            return true;
+        }
+        return false;
+    }
+
+    /**
      * Deletes a mesh node from the list of provisioned nodes
      *
      * <p>
@@ -1149,29 +1220,43 @@ abstract class BaseMeshNetwork {
      * @return true if deleted and false otherwise
      */
     public boolean deleteNode(@NonNull final ProvisionedMeshNode meshNode) {
-        //Let's go through the nodes and delete if a node exists
-        boolean nodeDeleted = false;
-        for (ProvisionedMeshNode node : nodes) {
-            if (node.getUuid().equalsIgnoreCase(meshNode.getUuid())) {
-                excludeNode(node);
-                nodes.remove(node);
-                notifyNodeDeleted(node);
-                nodeDeleted = true;
+        //Let's look if there is a provisioner for a given node.
+        Provisioner provisioner = null;
+        for (Provisioner prov : provisioners) {
+            if (prov.getProvisionerUuid().equalsIgnoreCase(meshNode.getUuid())) {
+                provisioner = prov;
                 break;
             }
         }
-        //We must also check if there is a provisioner based on the node we deleted
-        if (nodeDeleted) {
-            for (Provisioner provisioner : provisioners) {
-                if (provisioner.getProvisionerUuid().equalsIgnoreCase(meshNode.getUuid())) {
-                    provisioners.remove(provisioner);
-                    notifyProvisionerDeleted(provisioner);
-                    break;
-                }
-            }
-        }
+        return removeProvisionerAndNode(meshNode, provisioner);
+    }
 
-        return nodeDeleted;
+    private boolean removeProvisionerAndNode(@Nullable final ProvisionedMeshNode node, @Nullable final Provisioner provisioner){
+        if (provisioner != null && provisioners.remove(provisioner)) {
+            if(node != null){
+                excludeNode(node);
+                if(nodes.remove(node)){
+                    notifyNodeDeleted(node);
+                }
+            } else {
+                notifyProvisionerDeleted(provisioner);
+            }
+            notifyNetworkUpdated();
+            return true;
+        }
+        if(node != null && nodes.remove(node)) {
+            excludeNode(node);
+            if(provisioner != null){
+                if(provisioners.remove(provisioner)){
+                    notifyProvisionerDeleted(provisioner);
+                }
+            } else {
+                notifyNodeDeleted(node);
+            }
+            notifyNetworkUpdated();
+            return true;
+        }
+        return false;
     }
 
     /**
@@ -1204,6 +1289,28 @@ abstract class BaseMeshNetwork {
             if (node.getElements().containsKey(element.getElementAddress())) {
                 element.setName(name);
                 node.getElements().put(element.getElementAddress(), element);
+                notifyNodeUpdated(node);
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * @param address {@link Element} address
+     * @param name    Name
+     * @return true if successful and false otherwise
+     * @throws IllegalArgumentException if name is empty
+     */
+    public boolean updateElementName(final int address, @NonNull final String name) throws IllegalArgumentException {
+        if (TextUtils.isEmpty(name))
+            throw new IllegalArgumentException("Element name cannot be empty.");
+
+        final ProvisionedMeshNode node = getNode(address);
+        if (node != null) {
+            final Element element = node.getElements().get(address);
+            if (element != null) {
+                element.setName(name);
                 notifyNodeUpdated(node);
                 return true;
             }
@@ -1250,7 +1357,11 @@ abstract class BaseMeshNetwork {
     /**
      * Returns the map of network exclusions
      */
-    public Map<Integer, ArrayList<Integer>> getNetworkExclusions() {
+    public Map<Integer, List<Integer>> getNetworkExclusions() {
+        final Map<Integer, List<Integer>> networkExclusions = new HashMap<>();
+        for (Map.Entry<Integer, List<Integer>> entry : this.networkExclusions.entrySet()) {
+            networkExclusions.put(entry.getKey(), Collections.unmodifiableList(entry.getValue()));
+        }
         return Collections.unmodifiableMap(networkExclusions);
     }
 
@@ -1258,7 +1369,7 @@ abstract class BaseMeshNetwork {
      * Setter required by room db and is restricted for internal use.
      */
     @RestrictTo(RestrictTo.Scope.LIBRARY)
-    public void setNetworkExclusions(@NonNull final Map<Integer, ArrayList<Integer>> networkExclusions) {
+    public void setNetworkExclusions(@NonNull final Map<Integer, List<Integer>> networkExclusions) {
         this.networkExclusions = networkExclusions;
     }
 
@@ -1294,9 +1405,9 @@ abstract class BaseMeshNetwork {
      */
     private void excludeNode(@NonNull final ProvisionedMeshNode node) {
         //Exclude node
-        node.setExcluded(true);
-        notifyNodeUpdated(node);
-        ArrayList<Integer> addresses = networkExclusions.get(ivIndex.getIvIndex());
+        // node.setExcluded(true);
+        // notifyNodeUpdated(node);
+        List<Integer> addresses = networkExclusions.get(ivIndex.getIvIndex());
         if (addresses == null) {
             addresses = new ArrayList<>();
         }
@@ -1308,7 +1419,7 @@ abstract class BaseMeshNetwork {
         }
 
         networkExclusions.put(ivIndex.getIvIndex(), addresses);
-        notifyNetworkUpdated();
+        //notifyNetworkUpdated();
     }
 
     private boolean validateKey(@NonNull final byte[] key) {
@@ -1392,12 +1503,6 @@ abstract class BaseMeshNetwork {
     final void notifyNodeUpdated(@NonNull final ProvisionedMeshNode node) {
         if (mCallbacks != null) {
             mCallbacks.onNodeUpdated(node);
-        }
-    }
-
-    final void notifyNodesUpdated() {
-        if (mCallbacks != null) {
-            mCallbacks.onNodesUpdated();
         }
     }
 

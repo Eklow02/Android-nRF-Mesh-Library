@@ -22,6 +22,7 @@
 
 package no.nordicsemi.android.nrfmesh;
 
+import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.os.Bundle;
 import android.view.LayoutInflater;
@@ -31,6 +32,8 @@ import android.view.ViewGroup;
 import com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton;
 import com.google.android.material.snackbar.Snackbar;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 import androidx.annotation.NonNull;
@@ -44,6 +47,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import no.nordicsemi.android.mesh.Group;
 import no.nordicsemi.android.mesh.MeshNetwork;
 import no.nordicsemi.android.nrfmesh.adapter.GroupAdapter;
+import no.nordicsemi.android.nrfmesh.adapter.GroupItemUIState;
 import no.nordicsemi.android.nrfmesh.databinding.FragmentGroupsBinding;
 import no.nordicsemi.android.nrfmesh.dialog.DialogFragmentCreateGroup;
 import no.nordicsemi.android.nrfmesh.viewmodels.SharedViewModel;
@@ -74,7 +78,7 @@ public class GroupsFragment extends Fragment implements
         final ItemTouchHelper.Callback itemTouchHelperCallback = new RemovableItemTouchHelperCallback(this);
         final ItemTouchHelper itemTouchHelper = new ItemTouchHelper(itemTouchHelperCallback);
         itemTouchHelper.attachToRecyclerView(recyclerViewGroups);
-        final GroupAdapter adapter = new GroupAdapter(requireContext());
+        final GroupAdapter adapter = new GroupAdapter();
         adapter.setOnItemClickListener(this);
         recyclerViewGroups.setAdapter(adapter);
 
@@ -86,11 +90,15 @@ public class GroupsFragment extends Fragment implements
                 } else {
                     binding.empty.getRoot().setVisibility(View.INVISIBLE);
                 }
-                adapter.updateAdapter(network, network.getGroups());
+                adapter.updateAdapter(populateGroups(network));
             }
         });
 
         fab.setOnClickListener(v -> {
+            if (mViewModel.getNetworkLiveData().getProvisioner().getAllocatedGroupRanges().isEmpty()) {
+                displaySnackBar(getString(R.string.error_allocate_group_range), null);
+                return;
+            }
             DialogFragmentCreateGroup fragmentCreateGroup = DialogFragmentCreateGroup.newInstance();
             fragmentCreateGroup.show(getChildFragmentManager(), null);
         });
@@ -122,12 +130,19 @@ public class GroupsFragment extends Fragment implements
 
     @Override
     public void onItemDismiss(final RemovableViewHolder viewHolder) {
-        final int position = viewHolder.getAdapterPosition();
+        final int position = viewHolder.getAbsoluteAdapterPosition();
         final MeshNetwork network = mViewModel.getNetworkLiveData().getMeshNetwork();
         final Group group = network.getGroups().get(position);
         if (network.getModels(group).size() == 0) {
             network.removeGroup(group);
-            displaySnackBar(group);
+            final View.OnClickListener action = v -> {
+                binding.empty.getRoot().setVisibility(View.INVISIBLE);
+                final MeshNetwork network1 = mViewModel.getNetworkLiveData().getMeshNetwork();
+                if (network1 != null) {
+                    network1.addGroup(group);
+                }
+            };
+            displaySnackBar(getString(R.string.group_deleted, group.getName()), action);
         }
     }
 
@@ -158,11 +173,7 @@ public class GroupsFragment extends Fragment implements
     @Override
     public boolean onGroupAdded(@NonNull final String name, final int address) {
         final MeshNetwork network = mViewModel.getNetworkLiveData().getMeshNetwork();
-        final Group group = network.createGroup(network.getSelectedProvisioner(), address, name);
-        if (group != null) {
-            return network.addGroup(group);
-        }
-        return false;
+        return network.addGroup(network.createGroup(network.getSelectedProvisioner(), address, name));
     }
 
     @Override
@@ -171,18 +182,20 @@ public class GroupsFragment extends Fragment implements
         return network.addGroup(group);
     }
 
-    private void displaySnackBar(final Group group) {
-        final String message = getString(R.string.group_deleted, group.getName());
-        Snackbar.make(binding.container, message, Snackbar.LENGTH_LONG)
-                .setActionTextColor(getResources().getColor(R.color.colorSecondary))
-                .setAction(R.string.undo, v -> {
-                    binding.empty.getRoot().setVisibility(View.INVISIBLE);
-                    final MeshNetwork network = mViewModel.getNetworkLiveData().getMeshNetwork();
-                    if (network != null) {
-                        network.addGroup(group);
-                    }
+    @SuppressLint("ShowToast")
+    private void displaySnackBar(final String message, final View.OnClickListener action) {
+        Snackbar snack = Snackbar.make(binding.container, message, Snackbar.LENGTH_LONG);
+        if (action != null)
+            snack = snack.setActionTextColor(getResources().getColor(R.color.colorSecondary))
+                    .setAction(R.string.undo, action);
+        snack.show();
+    }
 
-                })
-                .show();
+    private List<GroupItemUIState> populateGroups(final MeshNetwork network) {
+        final List<GroupItemUIState> groups = new ArrayList<>();
+        for (Group group : network.getGroups()) {
+            groups.add(new GroupItemUIState(group.getName(), group.getAddress(), network.getModels(group).size()));
+        }
+        return groups;
     }
 }

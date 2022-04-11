@@ -340,13 +340,12 @@ public class MeshParserUtils {
     public static int getOpCode(final byte[] accessPayload, final int opCodeCount) {
         switch (opCodeCount) {
             case 1:
-                return accessPayload[0];
+                return unsignedByteToInt(accessPayload[0]);
             case 2:
                 return unsignedBytesToInt(accessPayload[1], accessPayload[0]);
             default:
-                return unsignedByteToInt(accessPayload[1]) << 8
-                        | unsignedByteToInt(accessPayload[0]) << 16
-                        | unsignedByteToInt(accessPayload[2]);
+                // Returns the 6 bit opcode from a 3-octet opcode of a vendor model message
+                return unsignedByteToInt(accessPayload[0]) & 0x3F;
         }
     }
 
@@ -603,11 +602,11 @@ public class MeshParserUtils {
      * @param modelId model identifier
      */
     public static boolean isVendorModel(final int modelId) {
-        return modelId < Short.MIN_VALUE || modelId > Short.MAX_VALUE;
+        return (modelId & 0xFFFF0000) != 0;
     }
 
     public static int getCompanyIdentifier(final int modelId) {
-        if (modelId >= Short.MIN_VALUE && modelId <= Short.MAX_VALUE) {
+        if (!MeshParserUtils.isVendorModel(modelId)) {
             throw new IllegalArgumentException("Not a valid vendor model ID");
         }
         final ByteBuffer buffer = ByteBuffer.allocate(4).order(ByteOrder.BIG_ENDIAN);
@@ -750,7 +749,7 @@ public class MeshParserUtils {
      */
     public static long parseTimeStamp(String timestamp) {
         try {
-            if(timestamp.contains("Z")) {
+            if (timestamp.contains("Z")) {
                 timestamp = timestamp.replace("Z", "+00:00");
             }
             final Date date = SDF.parse(timestamp);

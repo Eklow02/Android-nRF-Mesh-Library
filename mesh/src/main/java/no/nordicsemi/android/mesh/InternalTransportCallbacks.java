@@ -92,11 +92,12 @@ public interface InternalTransportCallbacks {
      */
     void onMeshNodeReset(final ProvisionedMeshNode meshNode);
 
-
     /**
      * Returns the mesh network
      */
     MeshNetwork getMeshNetwork();
+
+    void addGroup(final Group group);
 
     void storeScene(final int address, final int currentScene, final List<Integer> scenes);
 
