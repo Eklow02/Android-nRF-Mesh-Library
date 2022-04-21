@@ -14,7 +14,7 @@ import androidx.room.ColumnInfo;
 import androidx.room.Ignore;
 import androidx.room.PrimaryKey;
 
-abstract class MeshKey implements Parcelable, Cloneable {
+public abstract class MeshKey implements Parcelable, Cloneable {
 
     @PrimaryKey(autoGenerate = true)
     protected int id;
