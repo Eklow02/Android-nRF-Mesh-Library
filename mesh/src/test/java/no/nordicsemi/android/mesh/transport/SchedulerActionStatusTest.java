@@ -39,7 +39,7 @@ public class SchedulerActionStatusTest {
                         Arrays.asList(ScheduleEntry.DayOfWeek.SATURDAY, ScheduleEntry.DayOfWeek.SUNDAY))))
                 .setAction(ScheduleEntry.Action.TurnOn)
                 .setGenericTransitionTime(new GenericTransitionTime(GenericTransitionTime.TransitionResolution.SECOND, GenericTransitionTime.TransitionStep.Specific(8)))
-                .setScene(ScheduleEntry.Scene.Address(0x3333));
+                .setScene(ScheduleEntry.Scene.Number(0x3333));
 
         Mockito.when(accessMessage.getParameters()).thenReturn(schedulerData);
 

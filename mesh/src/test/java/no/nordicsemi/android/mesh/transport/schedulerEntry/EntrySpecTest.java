@@ -39,7 +39,7 @@ public class EntrySpecTest {
                         Arrays.asList(ScheduleEntry.DayOfWeek.SATURDAY, ScheduleEntry.DayOfWeek.SUNDAY))))
                 .setAction(ScheduleEntry.Action.TurnOn)
                 .setGenericTransitionTime(new GenericTransitionTime(GenericTransitionTime.TransitionResolution.SECOND, GenericTransitionTime.TransitionStep.Specific(8)))
-                .setScene(ScheduleEntry.Scene.Address(0x3333));
+                .setScene(ScheduleEntry.Scene.Number(0x3333));
        BitWriter bitWriter = new BitWriter();
         entry.assembleMessageParameters(bitWriter);
 
@@ -72,7 +72,7 @@ public class EntrySpecTest {
                         Arrays.asList(ScheduleEntry.DayOfWeek.SATURDAY, ScheduleEntry.DayOfWeek.SUNDAY))))
                 .setAction(ScheduleEntry.Action.TurnOn)
                 .setGenericTransitionTime(new GenericTransitionTime(GenericTransitionTime.TransitionResolution.SECOND, GenericTransitionTime.TransitionStep.Specific(8)))
-                .setScene(ScheduleEntry.Scene.Address(0x3333));
+                .setScene(ScheduleEntry.Scene.Number(0x3333));
 
         byte[] testData = new byte[]{(byte)0x33,(byte) 0x33,(byte) 0x48,(byte) 0x1C,(byte) 0x16, (byte) 0xBC, (byte) 0xC4, (byte)0x50,(byte) 0x11,(byte) 0x40};
         ScheduleEntry entry = new ScheduleEntry(new BitReader(testData));
