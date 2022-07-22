@@ -1,17 +1,20 @@
 package no.nordicsemi.android.mesh.transport;
 
-import android.util.Log;
+import no.nordicsemi.android.mesh.logger.MeshLogger;
+
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
 import no.nordicsemi.android.mesh.Features;
 import no.nordicsemi.android.mesh.Group;
+import no.nordicsemi.android.mesh.InternalTransportCallbacks;
 import no.nordicsemi.android.mesh.MeshManagerApi;
 import no.nordicsemi.android.mesh.MeshNetwork;
+import no.nordicsemi.android.mesh.MeshStatusCallbacks;
 import no.nordicsemi.android.mesh.NetworkKey;
 import no.nordicsemi.android.mesh.control.BlockAcknowledgementMessage;
 import no.nordicsemi.android.mesh.control.TransportControlMessage;
@@ -30,6 +33,7 @@ import no.nordicsemi.android.mesh.utils.RelaySettings;
 
 import static no.nordicsemi.android.mesh.models.SigModelParser.CONFIGURATION_SERVER;
 import static no.nordicsemi.android.mesh.models.SigModelParser.SCENE_SERVER;
+import static no.nordicsemi.android.mesh.utils.MeshAddress.ALL_PROXIES_ADDRESS;
 import static no.nordicsemi.android.mesh.utils.MeshAddress.isValidUnassignedAddress;
 
 class DefaultNoOperationMessageState extends MeshMessageState {
@@ -39,14 +43,18 @@ class DefaultNoOperationMessageState extends MeshMessageState {
     /**
      * Constructs the DefaultNoOperationMessageState
      *
-     * @param meshMessage   {@link MeshMessage} Mesh message to be sent
-     * @param meshTransport {@link MeshTransport} Mesh transport
-     * @param callbacks     {@link InternalMeshMsgHandlerCallbacks} callbacks
+     * @param meshMessage        {@link MeshMessage} Mesh message to be sent
+     * @param meshTransport      {@link MeshTransport} Mesh transport
+     * @param handlerCallbacks   {@link InternalMeshMsgHandlerCallbacks} callbacks
+     * @param transportCallbacks {@link InternalTransportCallbacks} callbacks
+     * @param statusCallbacks    {@link MeshStatusCallbacks} callbacks
      */
     DefaultNoOperationMessageState(@Nullable final MeshMessage meshMessage,
                                    @NonNull final MeshTransport meshTransport,
-                                   @NonNull final InternalMeshMsgHandlerCallbacks callbacks) {
-        super(meshMessage, meshTransport, callbacks);
+                                   @NonNull final InternalMeshMsgHandlerCallbacks handlerCallbacks,
+                                   @NonNull final InternalTransportCallbacks transportCallbacks,
+                                   @NonNull final MeshStatusCallbacks statusCallbacks) {
+        super(meshMessage, meshTransport, handlerCallbacks, transportCallbacks, statusCallbacks);
     }
 
     @Override
@@ -71,10 +79,10 @@ class DefaultNoOperationMessageState extends MeshMessageState {
                     parseControlMessage((ControlMessage) message);
                 }
             } else {
-                Log.v(TAG, "Message reassembly may not be completed yet!");
+                MeshLogger.verbose(TAG, "Message reassembly may not be completed yet!");
             }
         } catch (ExtendedInvalidCipherTextException e) {
-            Log.e(TAG, "Decryption failed in " + e.getTag() + " : " + e.getMessage());
+            MeshLogger.error(TAG, "Decryption failed in " + e.getTag() + " : " + e.getMessage());
             mMeshStatusCallbacks.onMessageDecryptionFailed(e.getTag(), e.getMessage());
         }
     }
@@ -113,15 +121,19 @@ class DefaultNoOperationMessageState extends MeshMessageState {
                     final ConfigHeartbeatPublicationStatus status = new ConfigHeartbeatPublicationStatus(message);
                     if (!isReceivedViaProxyFilter(message)) {
                         if (status.isSuccessful()) {
-                            final ConfigurationServerModel model = (ConfigurationServerModel) getMeshModel(node, status.getSrc(), CONFIGURATION_SERVER);
+                            final MeshModel model = getMeshModel(node, status.getSrc(), CONFIGURATION_SERVER);
                             if (model != null) {
-                                model.setHeartbeatPublication(!isValidUnassignedAddress(status.getHeartbeatPublication().getDst()) ?
-                                        status.getHeartbeatPublication() : null);
+                                ((ConfigurationServerModel) model).
+                                        setHeartbeatPublication(!isValidUnassignedAddress(status.getHeartbeatPublication().getDst()) ? status.getHeartbeatPublication() : null);
                             }
                         }
                     }
                     mInternalTransportCallbacks.updateMeshNetwork(status);
                     mMeshStatusCallbacks.onMeshMessageReceived(message.getSrc(), status);
+                } else if (message.getOpCode() == ApplicationMessageOpCodes.GENERIC_LOCATION_GLOBAL_STATUS) {
+                    final GenericLocationGlobalStatus genericLocationGlobalStatus = new GenericLocationGlobalStatus(message);
+                    mInternalTransportCallbacks.updateMeshNetwork(genericLocationGlobalStatus);
+                    mMeshStatusCallbacks.onMeshMessageReceived(message.getSrc(), genericLocationGlobalStatus);
                 } else if (message.getOpCode() == ApplicationMessageOpCodes.SENSOR_DESCRIPTOR_STATUS) {
                     final SensorDescriptorStatus status = new SensorDescriptorStatus(message);
                     mInternalTransportCallbacks.updateMeshNetwork(status);
@@ -150,6 +162,20 @@ class DefaultNoOperationMessageState extends MeshMessageState {
                     final SensorSeriesStatus status = new SensorSeriesStatus(message);
                     mInternalTransportCallbacks.updateMeshNetwork(status);
                     mMeshStatusCallbacks.onMeshMessageReceived(message.getSrc(), status);
+                } else if (message.getOpCode() == ApplicationMessageOpCodes.SCHEDULER_ACTION_STATUS) {
+                    final SchedulerActionStatus schedulerActionStatus = new SchedulerActionStatus(message);
+                    mInternalTransportCallbacks.updateMeshNetwork(schedulerActionStatus);
+                    mMeshStatusCallbacks.onMeshMessageReceived(message.getSrc(), schedulerActionStatus);
+                } else if (message.getOpCode() == ApplicationMessageOpCodes.GENERIC_ADMIN_PROPERTY_STATUS ||
+                        message.getOpCode() == ApplicationMessageOpCodes.GENERIC_MANUFACTURER_PROPERTY_STATUS ||
+                        message.getOpCode() == ApplicationMessageOpCodes.GENERIC_USER_PROPERTY_STATUS) {
+                    final GenericPropertyStatus status = new GenericPropertyStatus(message);
+                    mInternalTransportCallbacks.updateMeshNetwork(status);
+                    mMeshStatusCallbacks.onMeshMessageReceived(message.getSrc(), status);
+                } else if (message.getOpCode() == ApplicationMessageOpCodes.TIME_STATUS) {
+                    final TimeStatus timeStatus = new TimeStatus(message);
+                    mInternalTransportCallbacks.updateMeshNetwork(timeStatus);
+                    mMeshStatusCallbacks.onMeshMessageReceived(message.getSrc(), timeStatus);
                 } else {
                     handleUnknownPdu(message);
                 }
@@ -162,6 +188,10 @@ class DefaultNoOperationMessageState extends MeshMessageState {
                     }
                     mInternalTransportCallbacks.updateMeshNetwork(status);
                     mMeshStatusCallbacks.onMeshMessageReceived(message.getSrc(), status);
+                } else if (message.getOpCode() == ApplicationMessageOpCodes.GENERIC_ON_POWER_UP_STATUS) {
+                    final GenericOnPowerUpStatus genericOnPowerUpStatus = new GenericOnPowerUpStatus(message);
+                    mInternalTransportCallbacks.updateMeshNetwork(genericOnPowerUpStatus);
+                    mMeshStatusCallbacks.onMeshMessageReceived(message.getSrc(), genericOnPowerUpStatus);
                 } else if (message.getOpCode() == ConfigMessageOpCodes.CONFIG_NETKEY_STATUS) {
                     final ConfigNetKeyStatus status = new ConfigNetKeyStatus(message);
                     if (!isReceivedViaProxyFilter(message)) {
@@ -446,6 +476,18 @@ class DefaultNoOperationMessageState extends MeshMessageState {
                         mInternalTransportCallbacks.updateMeshNetwork(status);
                         mMeshStatusCallbacks.onMeshMessageReceived(message.getSrc(), status);
                     }
+                } else if (message.getOpCode() == ApplicationMessageOpCodes.SCHEDULER_STATUS) {
+                    final SchedulerStatus schedulerStatus = new SchedulerStatus(message);
+                    mInternalTransportCallbacks.updateMeshNetwork(schedulerStatus);
+                    mMeshStatusCallbacks.onMeshMessageReceived(message.getSrc(), schedulerStatus);
+                } else if (message.getOpCode() == ApplicationMessageOpCodes.TIME_ZONE_STATUS) {
+                    final TimeZoneStatus timeZoneStatus = new TimeZoneStatus(message);
+                    mInternalTransportCallbacks.updateMeshNetwork(timeZoneStatus);
+                    mMeshStatusCallbacks.onMeshMessageReceived(message.getSrc(), timeZoneStatus);
+                } else if (message.getOpCode() == ApplicationMessageOpCodes.GENERIC_DEFAULT_TRANSITION_TIME_STATUS) {
+                    final GenericDefaultTransitionTimeStatus genericDefaultTransitionTimeStatus = new GenericDefaultTransitionTimeStatus(message);
+                    mInternalTransportCallbacks.updateMeshNetwork(genericDefaultTransitionTimeStatus);
+                    mMeshStatusCallbacks.onMeshMessageReceived(message.getSrc(), genericDefaultTransitionTimeStatus);
                 } else {
                     handleUnknownPdu(message);
                 }
@@ -455,7 +497,7 @@ class DefaultNoOperationMessageState extends MeshMessageState {
                     final VendorModelMessageAcked vendorModelMessageAcked = (VendorModelMessageAcked) mMeshMessage;
                     final VendorModelMessageStatus status = new VendorModelMessageStatus(message, vendorModelMessageAcked.getModelIdentifier());
                     mMeshStatusCallbacks.onMeshMessageReceived(message.getSrc(), status);
-                    Log.v(TAG, "Vendor model Access PDU Received: " + MeshParserUtils.bytesToHex(message.getAccessPdu(), false));
+                    MeshLogger.verbose(TAG, "Vendor model Access PDU Received: " + MeshParserUtils.bytesToHex(message.getAccessPdu(), false));
                 } else if (mMeshMessage instanceof VendorModelMessageUnacked) {
                     final VendorModelMessageUnacked vendorModelMessageUnacked = (VendorModelMessageUnacked) mMeshMessage;
                     final VendorModelMessageStatus status = new VendorModelMessageStatus(message, vendorModelMessageUnacked.getModelIdentifier());
@@ -468,7 +510,7 @@ class DefaultNoOperationMessageState extends MeshMessageState {
     }
 
     private void handleUnknownPdu(final AccessMessage message) {
-        Log.v(TAG, "Unknown Access PDU Received: " + MeshParserUtils.bytesToHex(message.getAccessPdu(), false));
+        MeshLogger.verbose(TAG, "Unknown Access PDU Received: " + MeshParserUtils.bytesToHex(message.getAccessPdu(), false));
         mMeshStatusCallbacks.onUnknownPduReceived(message.getSrc(), message.getAccessPdu());
     }
 
@@ -483,12 +525,12 @@ class DefaultNoOperationMessageState extends MeshMessageState {
         if (controlMessage.getPduType() == MeshManagerApi.PDU_TYPE_NETWORK) {
             final TransportControlMessage transportControlMessage = controlMessage.getTransportControlMessage();
             if (transportControlMessage.getState() == TransportControlMessage.TransportControlMessageState.LOWER_TRANSPORT_BLOCK_ACKNOWLEDGEMENT) {
-                Log.v(TAG, "Acknowledgement payload: " + MeshParserUtils.bytesToHex(controlMessage.getTransportControlPdu(), false));
+                MeshLogger.verbose(TAG, "Acknowledgement payload: " + MeshParserUtils.bytesToHex(controlMessage.getTransportControlPdu(), false));
                 final ArrayList<Integer> retransmitPduIndexes = BlockAcknowledgementMessage.getSegmentsToBeRetransmitted(controlMessage.getTransportControlPdu(), segmentCount);
                 mMeshStatusCallbacks.onBlockAcknowledgementReceived(controlMessage.getSrc(), controlMessage);
                 executeResend(retransmitPduIndexes);
             } else {
-                Log.v(TAG, "Unexpected control message received, ignoring message");
+                MeshLogger.verbose(TAG, "Unexpected control message received, ignoring message");
                 mMeshStatusCallbacks.onUnknownPduReceived(controlMessage.getSrc(), controlMessage.getTransportControlPdu());
             }
         } else if (controlMessage.getPduType() == MeshManagerApi.PDU_TYPE_PROXY_CONFIGURATION) {
@@ -542,7 +584,7 @@ class DefaultNoOperationMessageState extends MeshMessageState {
     @SuppressWarnings("BooleanMethodIsAlwaysInverted")
     private boolean isReceivedViaProxyFilter(@NonNull final Message message) {
         final ProxyFilter filter = mInternalTransportCallbacks.getProxyFilter();
-        if (filter != null) {
+        if (filter != null && !filter.getAddresses().isEmpty()) {
             if (filter.getFilterType().getType() == ProxyFilterType.INCLUSION_LIST_FILTER) {
                 return filterAddressMatches(filter, message.getDst());
             } else {
@@ -565,11 +607,13 @@ class DefaultNoOperationMessageState extends MeshMessageState {
     private void createGroups(@NonNull final List<Integer> subscriptionAddresses) {
         final MeshNetwork network = mInternalTransportCallbacks.getMeshNetwork();
         for (Integer groupAddress : subscriptionAddresses) {
-            Group group = network.getGroup(groupAddress);
-            if (group == null) {
-                group = new Group(groupAddress, network.getMeshUUID());
-                group.setName("Unknown Group");
-                network.getGroups().add(group);
+            if (groupAddress < ALL_PROXIES_ADDRESS) {
+                Group group = network.getGroup(groupAddress);
+                if (group == null) {
+                    group = new Group(groupAddress, network.getMeshUUID());
+                    group.setName("Unknown Group");
+                    mInternalTransportCallbacks.addGroup(group);
+                }
             }
         }
     }

@@ -23,7 +23,7 @@
 package no.nordicsemi.android.mesh.transport;
 
 import android.content.Context;
-import android.util.Log;
+import no.nordicsemi.android.mesh.logger.MeshLogger;
 import android.util.SparseArray;
 
 import org.spongycastle.crypto.InvalidCipherTextException;
@@ -104,62 +104,63 @@ public abstract class BaseMeshMessageHandler implements MeshMessageHandlerApi, I
         final int nid = pdu[1] & 0x7F;
         final int acceptedIvIndex = network.getIvIndex().getIvIndex();
         int ivIndex = acceptedIvIndex == 0 ? 0 : acceptedIvIndex - 1;
-        NetworkKey networkKey;
-        SecureUtils.K2Output k2Output;
-        byte[] networkHeader;
-        int ctlTtl;
-        int ctl;
-        int ttl;
-        while (ivIndex <= ivIndex + 1) {
+        int tempIvIndex = ivIndex;
+        NetworkKey networkKey = null;
+        SecureUtils.K2Output k2Output = null;
+        byte[] networkHeader = null;
+        int ctlTtl = 0;
+        int ctl = 0;
+        int src = 0;
+        ProvisionedMeshNode node = null;
+        while (tempIvIndex <= ivIndex + 1) {
             //Here we go through all the network keys and filter out network keys based on the nid.
             for (int i = 0; i < networkKeys.size(); i++) {
                 networkKey = networkKeys.get(i);
                 k2Output = getMatchingK2Output(networkKey, nid);
                 if (k2Output != null) {
-                    networkHeader = deObfuscateNetworkHeader(pdu, MeshParserUtils.intToBytes(ivIndex), k2Output.getPrivacyKey());
+                    networkHeader = deObfuscateNetworkHeader(pdu, MeshParserUtils.intToBytes(tempIvIndex), k2Output.getPrivacyKey());
                     ctlTtl = networkHeader[0];
                     ctl = (ctlTtl >> 7) & 0x01;
-                    ttl = ctlTtl & 0x7F;
-                    Log.v(TAG, "TTL for received message: " + ttl);
-                    final int src = MeshParserUtils.unsignedBytesToInt(networkHeader[5], networkHeader[4]);
-
-                    final ProvisionedMeshNode node = network.getNode(src);
-                    if (node == null) {
-                        continue;
-                    }
-
-                    final byte[] sequenceNumber = ByteBuffer.allocate(3).order(ByteOrder.BIG_ENDIAN).put(networkHeader, 1, 3).array();
-                    Log.v(TAG, "Sequence number of received access message: " + MeshParserUtils.convert24BitsToInt(sequenceNumber));
-                    //TODO validate ivi
-                    byte[] nonce;
-                    try {
-                        final int networkPayloadLength = pdu.length - (2 + networkHeader.length);
-                        final byte[] transportPdu = new byte[networkPayloadLength];
-                        System.arraycopy(pdu, 8, transportPdu, 0, networkPayloadLength);
-                        final byte[] decryptedPayload;
-                        final MeshMessageState state;
-                        if (pdu[0] == MeshManagerApi.PDU_TYPE_NETWORK) {
-                            nonce = createNetworkNonce((byte) ctlTtl, sequenceNumber, src, MeshParserUtils.intToBytes(ivIndex));
-                            decryptedPayload = SecureUtils.decryptCCM(transportPdu, k2Output.getEncryptionKey(), nonce, SecureUtils.getNetMicLength(ctl));
-                            state = getState(src);
-                        } else {
-                            nonce = createProxyNonce(sequenceNumber, src, MeshParserUtils.intToBytes(ivIndex));
-                            decryptedPayload = SecureUtils.decryptCCM(transportPdu, k2Output.getEncryptionKey(), nonce, SecureUtils.getNetMicLength(ctl));
-                            state = getState(MeshAddress.UNASSIGNED_ADDRESS);
-                        }
-                        if (state != null) {
-                            //TODO look in to proxy filter messages
-                            ((DefaultNoOperationMessageState) state).parseMeshPdu(networkKey, node, pdu, networkHeader, decryptedPayload, ivIndex, sequenceNumber);
-                            return;
-                        }
-                    } catch (InvalidCipherTextException ex) {
-                        if (i == networkKeys.size() - 1) {
-                            throw new ExtendedInvalidCipherTextException(ex.getMessage(), ex.getCause(), TAG);
-                        }
+                    src = MeshParserUtils.unsignedBytesToInt(networkHeader[5], networkHeader[4]);
+                    // Check if the src is known to the network and if found let's break
+                    // Note a node may not be found if there are two provisioners are operating independently without syncing the network.
+                    node = network.getNode(src);
+                    if (node != null) {
+                        break;
                     }
                 }
             }
-            ivIndex++;
+            // IF the node was found we can safely try to decrypt message with the network key which we found src of the message.
+            if(node != null && k2Output != null) {
+                final byte[] sequenceNumber = ByteBuffer.allocate(3).order(ByteOrder.BIG_ENDIAN).put(networkHeader, 1, 3).array();
+                MeshLogger.verbose(TAG, "Sequence number of received Network PDU: " + MeshParserUtils.convert24BitsToInt(sequenceNumber));
+                //TODO validate ivi
+                byte[] nonce;
+                try {
+                    final int networkPayloadLength = pdu.length - (2 + networkHeader.length);
+                    final byte[] transportPdu = new byte[networkPayloadLength];
+                    System.arraycopy(pdu, 8, transportPdu, 0, networkPayloadLength);
+                    final byte[] decryptedPayload;
+                    final MeshMessageState state;
+                    if (pdu[0] == MeshManagerApi.PDU_TYPE_NETWORK) {
+                        nonce = createNetworkNonce((byte) ctlTtl, sequenceNumber, src, MeshParserUtils.intToBytes(tempIvIndex));
+                        decryptedPayload = SecureUtils.decryptCCM(transportPdu, k2Output.getEncryptionKey(), nonce, SecureUtils.getNetMicLength(ctl));
+                        state = getState(src);
+                    } else {
+                        nonce = createProxyNonce(sequenceNumber, src, MeshParserUtils.intToBytes(tempIvIndex));
+                        decryptedPayload = SecureUtils.decryptCCM(transportPdu, k2Output.getEncryptionKey(), nonce, SecureUtils.getNetMicLength(ctl));
+                        state = getState(MeshAddress.UNASSIGNED_ADDRESS);
+                    }
+                    if (state != null) {
+                        //TODO look in to proxy filter messages
+                        ((DefaultNoOperationMessageState) state).parseMeshPdu(networkKey, node, pdu, networkHeader, decryptedPayload, tempIvIndex, sequenceNumber);
+                        return;
+                    }
+                } catch (InvalidCipherTextException ex) {
+                    throw new ExtendedInvalidCipherTextException(ex.getMessage(), ex.getCause(), TAG);
+                }
+            }
+            tempIvIndex++;
         }
     }
 
@@ -171,9 +172,9 @@ public abstract class BaseMeshMessageHandler implements MeshMessageHandlerApi, I
      * @return {@link SecureUtils.K2Output} or null if the NID doesn't match.
      */
     private SecureUtils.K2Output getMatchingK2Output(@NonNull final NetworkKey networkKey, final int nid) {
-        if(nid == networkKey.getDerivatives().getNid())
+        if (nid == networkKey.getDerivatives().getNid())
             return networkKey.getDerivatives();
-        else if(networkKey.getOldDerivatives() != null && nid == networkKey.getOldDerivatives().getNid())
+        else if (networkKey.getOldDerivatives() != null && nid == networkKey.getOldDerivatives().getNid())
             return networkKey.getOldDerivatives();
         return null;
     }
@@ -191,10 +192,7 @@ public abstract class BaseMeshMessageHandler implements MeshMessageHandlerApi, I
      * @param meshMessage Mesh message
      */
     private DefaultNoOperationMessageState toggleState(@NonNull final MeshTransport transport, @Nullable final MeshMessage meshMessage) {
-        final DefaultNoOperationMessageState state = new DefaultNoOperationMessageState(meshMessage, transport, this);
-        state.setTransportCallbacks(mInternalTransportCallbacks);
-        state.setStatusCallbacks(mStatusCallbacks);
-        return state;
+        return new DefaultNoOperationMessageState(meshMessage, transport, this, mInternalTransportCallbacks, mStatusCallbacks);
     }
 
     /**
@@ -205,9 +203,8 @@ public abstract class BaseMeshMessageHandler implements MeshMessageHandlerApi, I
     protected MeshMessageState getState(final int address) {
         MeshMessageState state = stateSparseArray.get(address);
         if (state == null) {
-            state = new DefaultNoOperationMessageState(null, getTransport(address), this);
-            state.setTransportCallbacks(mInternalTransportCallbacks);
-            state.setStatusCallbacks(mStatusCallbacks);
+            state = new DefaultNoOperationMessageState(null, getTransport(address),
+                    this, mInternalTransportCallbacks, mStatusCallbacks);
             stateSparseArray.put(address, state);
         }
         return state;
@@ -260,9 +257,8 @@ public abstract class BaseMeshMessageHandler implements MeshMessageHandlerApi, I
      * @param configurationMessage {@link ProxyConfigMessage} Mesh message containing the message opcode and message parameters
      */
     private void createProxyConfigMeshMessage(final int src, final int dst, @NonNull final ProxyConfigMessage configurationMessage) {
-        final ProxyConfigMessageState currentState = new ProxyConfigMessageState(src, dst, configurationMessage, getTransport(dst), this);
-        currentState.setTransportCallbacks(mInternalTransportCallbacks);
-        currentState.setStatusCallbacks(mStatusCallbacks);
+        final ProxyConfigMessageState currentState = new ProxyConfigMessageState(src, dst, configurationMessage,
+                getTransport(dst), this, mInternalTransportCallbacks, mStatusCallbacks);
         stateSparseArray.put(dst, toggleState(currentState.getMeshTransport(), configurationMessage));
         currentState.executeSend();
     }
@@ -278,9 +274,8 @@ public abstract class BaseMeshMessageHandler implements MeshMessageHandlerApi, I
             return;
         }
 
-        final ConfigMessageState currentState = new ConfigMessageState(src, dst, node.getDeviceKey(), configurationMessage, getTransport(dst), this);
-        currentState.setTransportCallbacks(mInternalTransportCallbacks);
-        currentState.setStatusCallbacks(mStatusCallbacks);
+        final ConfigMessageState currentState = new ConfigMessageState(src, dst, node.getDeviceKey(), configurationMessage,
+                getTransport(dst), this, mInternalTransportCallbacks, mStatusCallbacks);
         if (MeshAddress.isValidUnicastAddress(dst)) {
             stateSparseArray.put(dst, toggleState(getTransport(dst), configurationMessage));
         }
@@ -294,21 +289,22 @@ public abstract class BaseMeshMessageHandler implements MeshMessageHandlerApi, I
      * {@link GenericLevelGet},  {@link GenericLevelSet},  {@link GenericLevelSetUnacknowledged},
      * {@link VendorModelMessageAcked} and {@link VendorModelMessageUnacked}</p>
      *
-     * @param src            source address where the message is originating from
-     * @param dst            Destination to which the message must be sent to, this could be a unicast address or a group address.
+     * @param src                source address where the message is originating from
+     * @param dst                Destination to which the message must be sent to, this could be a unicast address or a group address.
      * @param applicationMessage Mesh message containing the message opcode and message parameters.
      */
     private void createAppMeshMessage(final int src, final int dst, @NonNull final ApplicationMessage applicationMessage) {
         final ApplicationMessageState currentState;
         if (applicationMessage instanceof VendorModelMessageAcked) {
-            currentState = new VendorModelMessageAckedState(src, dst, (VendorModelMessageAcked) applicationMessage, getTransport(dst), this);
+            currentState = new VendorModelMessageAckedState(src, dst, (VendorModelMessageAcked) applicationMessage, getTransport(dst),
+                    this, mInternalTransportCallbacks, mStatusCallbacks);
         } else if (applicationMessage instanceof VendorModelMessageUnacked) {
-            currentState = new VendorModelMessageUnackedState(src, dst, (VendorModelMessageUnacked) applicationMessage, getTransport(dst), this);
+            currentState = new VendorModelMessageUnackedState(src, dst, (VendorModelMessageUnacked) applicationMessage, getTransport(dst),
+                    this, mInternalTransportCallbacks, mStatusCallbacks);
         } else {
-            currentState = new ApplicationMessageState(src, dst, applicationMessage, getTransport(dst), this);
+            currentState = new ApplicationMessageState(src, dst, applicationMessage, getTransport(dst),
+                    this, mInternalTransportCallbacks, mStatusCallbacks);
         }
-        currentState.setTransportCallbacks(mInternalTransportCallbacks);
-        currentState.setStatusCallbacks(mStatusCallbacks);
         if (MeshAddress.isValidUnicastAddress(dst)) {
             stateSparseArray.put(dst, toggleState(getTransport(dst), applicationMessage));
         }
@@ -323,22 +319,23 @@ public abstract class BaseMeshMessageHandler implements MeshMessageHandlerApi, I
      * {@link GenericLevelGet},  {@link GenericLevelSet},  {@link GenericLevelSetUnacknowledged},
      * {@link VendorModelMessageAcked} and {@link VendorModelMessageUnacked}</p>
      *
-     * @param src            source address where the message is originating from
-     * @param dst            Destination to which the message must be sent to, this could be a unicast address or a group address.
-     * @param label          Label UUID of destination address
+     * @param src                source address where the message is originating from
+     * @param dst                Destination to which the message must be sent to, this could be a unicast address or a group address.
+     * @param label              Label UUID of destination address
      * @param applicationMessage Mesh message containing the message opcode and message parameters.
      */
     private void createAppMeshMessage(final int src, final int dst, @NonNull UUID label, @NonNull final ApplicationMessage applicationMessage) {
         final ApplicationMessageState currentState;
         if (applicationMessage instanceof VendorModelMessageAcked) {
-            currentState = new VendorModelMessageAckedState(src, dst, label, (VendorModelMessageAcked) applicationMessage, getTransport(dst), this);
+            currentState = new VendorModelMessageAckedState(src, dst, label, (VendorModelMessageAcked) applicationMessage, getTransport(dst),
+                    this, mInternalTransportCallbacks, mStatusCallbacks);
         } else if (applicationMessage instanceof VendorModelMessageUnacked) {
-            currentState = new VendorModelMessageUnackedState(src, dst, label, (VendorModelMessageUnacked) applicationMessage, getTransport(dst), this);
+            currentState = new VendorModelMessageUnackedState(src, dst, label, (VendorModelMessageUnacked) applicationMessage, getTransport(dst),
+                    this, mInternalTransportCallbacks, mStatusCallbacks);
         } else {
-            currentState = new ApplicationMessageState(src, dst, label, applicationMessage, getTransport(dst), this);
+            currentState = new ApplicationMessageState(src, dst, label, applicationMessage, getTransport(dst),
+                    this, mInternalTransportCallbacks, mStatusCallbacks);
         }
-        currentState.setTransportCallbacks(mInternalTransportCallbacks);
-        currentState.setStatusCallbacks(mStatusCallbacks);
         if (MeshAddress.isValidUnicastAddress(dst)) {
             stateSparseArray.put(dst, toggleState(getTransport(dst), applicationMessage));
         }

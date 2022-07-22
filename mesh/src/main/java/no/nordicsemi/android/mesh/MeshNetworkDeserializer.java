@@ -1,6 +1,6 @@
 package no.nordicsemi.android.mesh;
 
-import android.util.Log;
+import no.nordicsemi.android.mesh.logger.MeshLogger;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonDeserializationContext;
@@ -31,6 +31,10 @@ import static no.nordicsemi.android.mesh.utils.MeshParserUtils.formatUuid;
 import static no.nordicsemi.android.mesh.utils.MeshParserUtils.isUuidPattern;
 import static no.nordicsemi.android.mesh.utils.MeshParserUtils.parseTimeStamp;
 import static no.nordicsemi.android.mesh.utils.MeshParserUtils.uuidToHex;
+
+import static no.nordicsemi.android.mesh.utils.MeshParserUtils.formatTimeStamp;
+import static no.nordicsemi.android.mesh.utils.MeshParserUtils.formatUuid;
+import static no.nordicsemi.android.mesh.utils.MeshParserUtils.isUuidPattern;
 
 public final class MeshNetworkDeserializer implements JsonSerializer<MeshNetwork>, JsonDeserializer<MeshNetwork> {
     private static final String TAG = MeshNetworkDeserializer.class.getSimpleName();
@@ -458,7 +462,7 @@ public final class MeshNetworkDeserializer implements JsonSerializer<MeshNetwork
                 group.setName(name);
                 groups.add(group);
             } catch (Exception ex) {
-                Log.e(TAG, "Error while de-serializing groups: " + ex.getMessage());
+                MeshLogger.error(TAG, "Error while de-serializing groups: " + ex.getMessage());
             }
         }
         return groups;
@@ -522,7 +526,7 @@ public final class MeshNetworkDeserializer implements JsonSerializer<MeshNetwork
                 scenes.add(scene);
             }
         } catch (Exception ex) {
-            Log.e(TAG, "Error while de-serializing scenes: " + ex.getMessage());
+            MeshLogger.error(TAG, "Error while de-serializing scenes: " + ex.getMessage());
         }
         return scenes;
     }
@@ -533,11 +537,11 @@ public final class MeshNetworkDeserializer implements JsonSerializer<MeshNetwork
      * @param networkExclusions exclusion list
      * @return JsonElement
      */
-    private JsonElement serializeExclusionList(@NonNull final Map<Integer, ArrayList<Integer>> networkExclusions) {
+    private JsonElement serializeExclusionList(@NonNull final Map<Integer, List<Integer>> networkExclusions) {
         final JsonArray exclusionList = new JsonArray();
         JsonObject exclusion;
         JsonArray array;
-        for (Map.Entry<Integer, ArrayList<Integer>> entry : networkExclusions.entrySet()) {
+        for (Map.Entry<Integer, List<Integer>> entry : networkExclusions.entrySet()) {
             exclusion = new JsonObject();
             array = new JsonArray();
             for (Integer address : entry.getValue()) {
@@ -556,8 +560,8 @@ public final class MeshNetworkDeserializer implements JsonSerializer<MeshNetwork
      * @param networkExclusions Network exclusions
      * @return List of nodes
      */
-    private Map<Integer, ArrayList<Integer>> deserializeExclusionList(@NonNull final JsonArray networkExclusions) {
-        final Map<Integer, ArrayList<Integer>> exclusionList = new HashMap<>();
+    private Map<Integer, List<Integer>> deserializeExclusionList(@NonNull final JsonArray networkExclusions) {
+        final Map<Integer, List<Integer>> exclusionList = new HashMap<>();
         JsonObject exclusion;
         int ivIndex;
         ArrayList<Integer> addresses;

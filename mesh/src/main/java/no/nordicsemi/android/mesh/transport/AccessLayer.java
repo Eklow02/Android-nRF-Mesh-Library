@@ -24,7 +24,7 @@ package no.nordicsemi.android.mesh.transport;
 
 import android.content.Context;
 import android.os.Handler;
-import android.util.Log;
+import no.nordicsemi.android.mesh.logger.MeshLogger;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -36,6 +36,7 @@ import static no.nordicsemi.android.mesh.utils.MeshParserUtils.bytesToHex;
 import static no.nordicsemi.android.mesh.utils.MeshParserUtils.createVendorOpCode;
 import static no.nordicsemi.android.mesh.utils.MeshParserUtils.getOpCode;
 import static no.nordicsemi.android.mesh.utils.MeshParserUtils.getOpCodeLength;
+import static no.nordicsemi.android.mesh.utils.MeshParserUtils.unsignedByteToInt;
 
 /**
  * AccessLayer implementation of the mesh network architecture as per the mesh profile specification.
@@ -89,7 +90,7 @@ abstract class AccessLayer {
         }
         final byte[] accessPdu = accessMessageBuffer.array();
 
-        Log.v(TAG, "Created Access PDU " + bytesToHex(accessPdu, false));
+        MeshLogger.verbose(TAG, "Created Access PDU " + bytesToHex(accessPdu, false));
         accessMessage.setAccessPdu(accessMessageBuffer.array());
     }
 
@@ -113,7 +114,7 @@ abstract class AccessLayer {
             accessMessageBuffer.put(vendorOpcode);
         }
         final byte[] accessPdu = accessMessageBuffer.array();
-        Log.v(TAG, "Created Access PDU " + bytesToHex(accessPdu, false));
+        MeshLogger.verbose(TAG, "Created Access PDU " + bytesToHex(accessPdu, false));
         accessMessage.setAccessPdu(accessPdu);
     }
 
@@ -128,10 +129,13 @@ abstract class AccessLayer {
         final byte[] accessPayload = message.getAccessPdu();
         final int opCodeLength = getOpCodeLength(accessPayload[0] & 0xFF);
         message.setOpCode(getOpCode(accessPayload, opCodeLength));
+        if(opCodeLength == 3) {
+            message.setCompanyIdentifier(unsignedByteToInt(accessPayload[2]) << 8 | unsignedByteToInt(accessPayload[1]));
+        }
         final int length = accessPayload.length - opCodeLength;
         final ByteBuffer paramsBuffer = ByteBuffer.allocate(length).order(ByteOrder.BIG_ENDIAN);
         paramsBuffer.put(accessPayload, opCodeLength, length);
         message.setParameters(paramsBuffer.array());
-        Log.v(TAG, "Received Access PDU " + bytesToHex(accessPayload, false));
+        MeshLogger.verbose(TAG, "Received Access PDU " + bytesToHex(accessPayload, false));
     }
 }

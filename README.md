@@ -1,17 +1,34 @@
 # Android-nRF-Mesh-Library
 [ ![Download](https://maven-badges.herokuapp.com/maven-central/no.nordicsemi.android/mesh/badge.svg?style=plastic) ](https://search.maven.org/artifact/no.nordicsemi.android/mesh)
 
+This is a Fork of [GitHub NordicSemiconductor Android nRF-Mesh-Library](https://github.com/NordicSemiconductor/Android-nRF-Mesh-Library).
+The Branch `master-nordic` has the upstream to the master of the nordic library.
+So we can track the master of the library and can easily merge the new version into our `master` via a feature branch.
+
 ## About
-The Android-nRF-Mesh-Library allows provisioning and sending messages to Bluetooth Mesh devices. 
+The Android-nRF-Mesh-Library allows provisioning and sending messages to Bluetooth Mesh devices.
 
 > Bluetooth Mesh specification may be found here: https://www.bluetooth.com/specifications/mesh-specifications/
 
 The library is compatible with version 1.0.1 of the Bluetooth Mesh Profile Specification.
 
 nRF Mesh for Android is supported on Android devices running Android 4.3 and onwards.
+## Features
 
-### Features
-1. Provisionig with all features that available in Bluetooth Mesh Profile 1.0.1, including OOB Public Key and all types of OOB.
+The library is compatible with
+- **Mesh Profile 1.0.1**,
+- **Mesh Model 1.0.1**,
+- **Mesh Device Properties 2**.
+
+The mesh network configuration (JSON schema) is compatible with
+- **Mesh Configuration Database Profile 1.0**.
+
+Bluetooth mesh specifications are available at
+[Bluetooth.com](https://www.bluetooth.com/specifications/specs/?status=active&show_latest_version=1&keyword=mesh).
+
+### Supported features
+1. Provisioning with all features that available in Bluetooth Mesh Profile 1.0.1, including
+   OOB Public Key and all types of OOB.
 2. Managing Provisioners, Network Keys, Application Keys, resetting network, etc.
 3. All network layers are working.
 4. Parsing Secure Network beacons.
@@ -34,24 +51,26 @@ nRF Mesh for Android is supported on Android devices running Android 4.3 and onw
 
 ## Optional
 
-* nrf52832/840 based Development Kit(s) to test the sample firmwares on.
+* nRF5 based Development Kit(s) to test the sample firmwares on.
 
 ## Installation
 
 * Open 'Android-nRF-Mesh-Library' project using Android Studio.
 * Connect an Android device.
 * Build and run project.
-* To be able to quickly start testing, use the bundled firmwares directory named `ExampleFirmwares` that includes a light server (Light source) and a light client (Switch) firmwares. those firmwares will work on a `nrf52832` DevKit.
+* To be able to quickly start testing, use the bundled firmwares directory named `ExampleFirmwares`
+that includes a light server (Light source) and a light client (Switch) firmwares. those firmwares
+will work on a `nrf52832` DevKit.
 
 ## How to include it in your own project
 
 #### Maven Central
 
-The library may be found on the Maven Central repository. 
+The library may be found on the Maven Central repository.
 Add it to your project by adding the following dependency:
 
-```grovy
-implementation 'no.nordicsemi.android:mesh:2.4.3'
+```groovy
+implementation 'no.nordicsemi.android:mesh:3.2.4'
 ```
 
 #### Manual
@@ -79,7 +98,10 @@ To start using the library in your own project take a look at the following snip
         mMeshManagerApi.loadMeshNetwork();
 ```
 
-The sample application uses the [Android BLE Library](https://github.com/NordicSemiconductor/Android-BLE-Library/) by Nordic Semiconductor ASA and is recommended to use this dependency in your application. Follow the snippet below when using the Android-Ble-Library in combination with the Android-Mesh-Library to send and receive data.
+The sample application uses the [Android BLE Library](https://github.com/NordicSemiconductor/Android-BLE-Library/)
+by Nordic Semiconductor ASA and is recommended to use this dependency in your application.
+Follow the snippet below when using the Android-Ble-Library in combination with the Android-Mesh-Library
+to send and receive data.
 ```java
     @Override
     public void onDataReceived(final BluetoothDevice bluetoothDevice, final int mtu, final byte[] pdu) {
@@ -91,14 +113,17 @@ The sample application uses the [Android BLE Library](https://github.com/NordicS
         mMeshManagerApi.handleWriteCallbacks(mtu, pdu);
     }
 ```
-When using your own ble library/module call the `mMeshManagerApi.handleNotifications(mtu, pdu);` and `mMeshManagerApi.handleWriteCallbacks(mtu, pdu);` to send and receive data.
+When using your own ble library/module call the `mMeshManagerApi.handleNotifications(mtu, pdu);` and
+`mMeshManagerApi.handleWriteCallbacks(mtu, pdu);` to send and receive data.
 
 Provisioning a node in to the network can be done in three steps,
 
-1.	Connect to the node advertising with the Mesh Provisioning UUID
-2.	Identify the node to be provisioned, where the devices will blink, vibrate or beep depending on the capabilities for pre-defined duration of 5 seconds. This is useful when provisioning multiple nodes. To identify a node call
+1. Connect to the node advertising with the Mesh Provisioning UUID
+2. Identify the node to be provisioned, where the devices will blink, vibrate or beep depending on
+the capabilities for pre-defined duration of 5 seconds. This is useful when provisioning multiple nodes.
+To identify a node call
 ```java
-    void identifyNode(@NonNull final UUID deviceUUID) throws IllegalArgumentException; 
+    void identifyNode(@NonNull final UUID deviceUUID) throws IllegalArgumentException;
 ```
 by passing the device uuid of the unprovisioned mesh node.
 or call
@@ -106,31 +131,46 @@ or call
     void identifyNode(@NonNull final UUID deviceUUID, final int attentionTimer) throws IllegalArgumentException;
 ```
 by passing the device uuid of the unprovisioned mesh node and the desired duration.
-3.  Depending on the identified device capabilities, call one of the following functions to provision the node.
+3. Depending on the identified device capabilities, call one of the following functions to provision
+   the node.
 ```java
-    void startProvisioning(@NonNull final UnprovisionedMeshNode unprovisionedMeshNode) throws IllegalArgumentException;
+    void startProvisioning(
+        @NonNull final UnprovisionedMeshNode unprovisionedMeshNode
+    ) throws IllegalArgumentException;
 ```
 or
 ```java
-    void startProvisioningWithStaticOOB(@NonNull final UnprovisionedMeshNode unprovisionedMeshNode) throws IllegalArgumentException;
+    void startProvisioningWithStaticOOB(
+        @NonNull final UnprovisionedMeshNode unprovisionedMeshNode
+    ) throws IllegalArgumentException;
 ```
 or
 ```java
-    void startProvisioningWithOutputOOB(@NonNull final UnprovisionedMeshNode unprovisionedMeshNode, final OutputOOBAction oobAction) throws IllegalArgumentException;
+    void startProvisioningWithOutputOOB(
+        @NonNull final UnprovisionedMeshNode unprovisionedMeshNode,
+        @NonNull final OutputOOBAction oobAction
+    ) throws IllegalArgumentException;
 ```
 or
 ```java
-    void startProvisioningWithInputOOB(@NonNull final UnprovisionedMeshNode unprovisionedMeshNode, @NonNull final InputOOBAction oobAction) throws IllegalArgumentException;
+    void startProvisioningWithInputOOB(
+        @NonNull final UnprovisionedMeshNode unprovisionedMeshNode,
+        @NonNull final InputOOBAction oobAction
+    ) throws IllegalArgumentException;
 ```
-Use the `MeshNetowrk` object to edit Mesh Network properties such as Network name, Provisioners and their properties (Name Address, TTL and Address Ranges), Network Keys, App Keys.
+Use the `MeshNetwork` object to edit Mesh Network properties such as Network name, Provisioners and
+their properties (Name Address, TTL and Address Ranges), Network Keys, App Keys.
 
-Following is an example on how to send a GenericOnOffSet message.
+Following is an example on how to send a `GenericOnOffSet` message.
 ```java
-final GenericOnOffSet genericOnOffSet = new GenericOnOffSet(appKey, state,
-                                new Random().nextInt(), transitionSteps, transitionStepResolution, delay);
-mMeshManagerAPi.createMeshPdu(address, genericOnOffSet);
+    final GenericOnOffSet genericOnOffSet = new GenericOnOffSet(
+        appKey, // App Key to sign the request with
+        state,  // The new state
+        new Random().nextInt()
+    );
+    mMeshManagerAPi.createMeshPdu(address, genericOnOffSet);
 ```
-and Config messages can also be sent similarly. 
+and Config messages can also be sent similarly.
 
 ## Author
 

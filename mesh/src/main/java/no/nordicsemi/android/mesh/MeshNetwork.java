@@ -3,20 +3,23 @@ package no.nordicsemi.android.mesh;
 
 import android.text.TextUtils;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.annotation.RestrictTo;
+import androidx.room.Entity;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
-import androidx.annotation.RestrictTo;
-import androidx.room.Entity;
 import no.nordicsemi.android.mesh.transport.Element;
 import no.nordicsemi.android.mesh.transport.MeshModel;
 import no.nordicsemi.android.mesh.transport.ProvisionedMeshNode;
 import no.nordicsemi.android.mesh.utils.MeshAddress;
+
+import static no.nordicsemi.android.mesh.AddressRange.isAddressInAnyRanges;
 
 @SuppressWarnings({"WeakerAccess", "UnusedReturnValue"})
 @Entity(tableName = "mesh_network")
@@ -118,7 +121,7 @@ public final class MeshNetwork extends BaseMeshNetwork {
 
 
     public List<Group> getGroups() {
-        return groups;
+        return Collections.unmodifiableList(groups);
     }
 
     void setGroups(final List<Group> groups) {
@@ -146,13 +149,19 @@ public final class MeshNetwork extends BaseMeshNetwork {
         // Populate all addresses that are currently in use
         final ArrayList<Integer> usedAddresses = new ArrayList<>();
         for (ProvisionedMeshNode node : nodes) {
-            usedAddresses.addAll(node.getElements().keySet());
+            //There could be devices that are provisioned but does not have the number of elements yet so let's check for that.
+            if (node.getElements().size() > 0)
+                usedAddresses.addAll(node.getElements().keySet());
+            else
+                usedAddresses.add(node.getUnicastAddress());
         }
         // Excluded addresses with the current IvIndex and current IvIndex - 1 must be considered as addresses in use.
-        if (networkExclusions.get(ivIndex.getIvIndex()) != null)
-            usedAddresses.addAll(networkExclusions.get(ivIndex.getIvIndex()));
-        if (networkExclusions.get(ivIndex.getIvIndex() - 1) != null)
-            usedAddresses.addAll(networkExclusions.get(ivIndex.getIvIndex() - 1));
+        final List<Integer> addressesWithCurrentIvIndex = networkExclusions.get(ivIndex.getIvIndex());
+        if (addressesWithCurrentIvIndex != null)
+            usedAddresses.addAll(addressesWithCurrentIvIndex);
+        final List<Integer> addressesWithCurrentIvIndexMinusOne = networkExclusions.get(ivIndex.getIvIndex() - 1);
+        if (addressesWithCurrentIvIndexMinusOne != null)
+            usedAddresses.addAll(addressesWithCurrentIvIndexMinusOne);
 
         Collections.sort(usedAddresses);
         // Iterate through all nodes just once, while iterating over ranges.
@@ -364,6 +373,34 @@ public final class MeshNetwork extends BaseMeshNetwork {
         return null;
     }
 
+    /**
+     * Returns the next available group  address for a provisioner based on the allocated group range
+     *
+     * @param provisioner {@link Provisioner}
+     * @return Group address
+     * @throws IllegalStateException if there is no allocated group range to this provisioner
+     */
+    public Integer nextAvailableGroupAddress(@NonNull final Provisioner provisioner, @NonNull final AllocatedGroupRange allocatedGroupRange) throws IllegalStateException {
+        if (!provisioner.allocatedGroupRanges.contains(allocatedGroupRange)) {
+            throw new IllegalArgumentException("Group range does not belong to provisioner.");
+        }
+
+        Collections.sort(groups, groupComparator);
+        //If the list of groups are empty we can start with the lowest address of the range
+        if (groups.isEmpty()) {
+            return allocatedGroupRange.getLowAddress();
+        }
+
+        for (int address = allocatedGroupRange.lowAddress; address < allocatedGroupRange.getHighAddress(); address++) {
+            //if the address is not in use, return it as the next available address to create a group
+            if (!isGroupAddressInUse(address)) {
+                return address;
+            }
+        }
+
+        return null;
+    }
+
     private boolean isGroupAddressInUse(final int address) {
         for (Group group : groups) {
             //if the address is not in use, return it as the next available address to create a group
@@ -386,6 +423,26 @@ public final class MeshNetwork extends BaseMeshNetwork {
         }
 
         final Integer address = nextAvailableGroupAddress(provisioner);
+        if (address != null) {
+            final Group group = new Group(address, meshUUID);
+            group.setName(name);
+            return group;
+        }
+        return null;
+    }
+
+    /**
+     * Creates a group using the next available group address based on the provisioners allocated group range
+     *
+     * @param provisioner provisioner
+     * @return a group or null if creation failed
+     */
+    public Group createGroup(@NonNull final Provisioner provisioner, @NonNull final String name, @NonNull final AllocatedGroupRange allocatedGroupRange) {
+        if (TextUtils.isEmpty(name)) {
+            throw new IllegalArgumentException("Group name cannot be empty");
+        }
+
+        final Integer address = nextAvailableGroupAddress(provisioner, allocatedGroupRange);
         if (address != null) {
             final Group group = new Group(address, meshUUID);
             group.setName(name);
@@ -431,11 +488,9 @@ public final class MeshNetwork extends BaseMeshNetwork {
                     " there is no group range allocated to the current provisioner");
         }
 
-        for (AllocatedGroupRange range : provisioner.getAllocatedGroupRanges()) {
-            if (range.getLowAddress() > address || range.getHighAddress() < address) {
-                throw new IllegalArgumentException("Unable to create group, " +
-                        "the address is outside the range allocated to the provisioner");
-            }
+        if (!isAddressInAnyRanges(provisioner.getAllocatedGroupRanges(), address)) {
+            throw new IllegalArgumentException("Unable to create group, " +
+                    "the address is outside the range allocated to the provisioner");
         }
 
         final Group group = new Group(address, meshUUID);
@@ -443,6 +498,7 @@ public final class MeshNetwork extends BaseMeshNetwork {
             group.setName(name);
         return group;
     }
+
 
     /**
      * Adds a group to the existing group list within the network
@@ -462,13 +518,13 @@ public final class MeshNetwork extends BaseMeshNetwork {
         //We check if the group is made of a virtual address
         if (group.getAddressLabel() == null) {
             for (AllocatedGroupRange range : provisioner.getAllocatedGroupRanges()) {
-                if (range.getLowAddress() > group.getAddress() || range.getHighAddress() < group.getAddress()) {
-                    throw new IllegalArgumentException("Unable to create group, " +
-                            "the address is outside the range allocated to the provisioner");
+                if (group.getAddress()  >= range.getLowAddress() && group.getAddress() <= range.getHighAddress()) {
+                    return insertGroup(group);
                 }
             }
         }
-        return insertGroup(group);
+        throw new IllegalArgumentException("Unable to create group, " +
+                "the address is outside the range allocated to the provisioner");
     }
 
     private boolean insertGroup(@NonNull final Group group) {
@@ -560,7 +616,7 @@ public final class MeshNetwork extends BaseMeshNetwork {
     @Nullable
     public Integer nextAvailableSceneNumber(Provisioner provisioner) throws IllegalArgumentException {
         if (provisioner.getAllocatedSceneRanges().isEmpty()) {
-            throw new IllegalArgumentException("Please allocate a scene range to the provisioner");
+            throw new IllegalArgumentException("Please allocate a scene range to the provisioner!");
         }
 
         Collections.sort(scenes, sceneComparator);
@@ -887,7 +943,7 @@ public final class MeshNetwork extends BaseMeshNetwork {
     /**
      * Returns the provisioning flags
      */
-    public final int getProvisioningFlags() {
+    public int getProvisioningFlags() {
         int flags = 0;
         final NetworkKey key = getPrimaryNetworkKey();
         if (key != null) {

@@ -22,7 +22,7 @@
 
 package no.nordicsemi.android.mesh.transport;
 
-import android.util.Log;
+import no.nordicsemi.android.mesh.logger.MeshLogger;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -126,22 +126,22 @@ public class ConfigModelPublicationSet extends ConfigMessage {
     void assembleMessageParameters() {
         final ByteBuffer paramsBuffer;
         final byte[] applicationKeyIndex = MeshParserUtils.addKeyIndexPadding(appKeyIndex);
-        Log.v(TAG, "AppKeyIndex: " + appKeyIndex);
-        Log.v(TAG, "Element address: " + formatAddress(elementAddress, true));
-        Log.v(TAG, "Publish address: " + formatAddress(publishAddress, true));
-        Log.v(TAG, "Publish ttl: " + publishTtl);
-        Log.v(TAG, "Publish steps: " + publicationSteps);
-        Log.v(TAG, "Publish resolution: " + publicationResolution);
-        Log.v(TAG, "Retransmission count: " + publishRetransmitCount);
-        Log.v(TAG, "Retransmission interval steps: " + publishRetransmitIntervalSteps);
-        Log.v(TAG, "Model: " + MeshParserUtils.bytesToHex(addressIntToBytes(modelIdentifier), false));
+        MeshLogger.verbose(TAG, "AppKeyIndex: " + appKeyIndex);
+        MeshLogger.verbose(TAG, "Element address: " + formatAddress(elementAddress, true));
+        MeshLogger.verbose(TAG, "Publish address: " + formatAddress(publishAddress, true));
+        MeshLogger.verbose(TAG, "Publish ttl: " + publishTtl);
+        MeshLogger.verbose(TAG, "Publish steps: " + publicationSteps);
+        MeshLogger.verbose(TAG, "Publish resolution: " + publicationResolution);
+        MeshLogger.verbose(TAG, "Retransmission count: " + publishRetransmitCount);
+        MeshLogger.verbose(TAG, "Retransmission interval steps: " + publishRetransmitIntervalSteps);
+        MeshLogger.verbose(TAG, "Model: " + MeshParserUtils.bytesToHex(addressIntToBytes(modelIdentifier), false));
 
         final int rfu = 0; // We ignore the rfu here
         final int octet5 = (applicationKeyIndex[0] | (credentialFlag ? 0b01 : 0b00) << 4);
         final byte publishPeriod = (byte) ((publicationResolution << 6) | (publicationSteps & 0x3F));
         final int octet8 = (publishRetransmitIntervalSteps << 3) | (publishRetransmitCount & 0x07);
         //We check if the model identifier value is within the range of a 16-bit value here. If it is then it is a sig model
-        if (modelIdentifier >= Short.MIN_VALUE && modelIdentifier <= Short.MAX_VALUE) {
+        if (!MeshParserUtils.isVendorModel(modelIdentifier)) {
             paramsBuffer = ByteBuffer.allocate(SIG_MODEL_PUBLISH_SET_PARAMS_LENGTH).order(ByteOrder.LITTLE_ENDIAN);
             paramsBuffer.putShort((short) this.elementAddress);
             paramsBuffer.putShort((short) this.publishAddress);
@@ -151,7 +151,6 @@ public class ConfigModelPublicationSet extends ConfigMessage {
             paramsBuffer.put(publishPeriod);
             paramsBuffer.put((byte) octet8);
             paramsBuffer.putShort((short) modelIdentifier);
-            mParameters = paramsBuffer.array();
         } else {
             paramsBuffer = ByteBuffer.allocate(VENDOR_MODEL_PUBLISH_SET_PARAMS_LENGTH).order(ByteOrder.LITTLE_ENDIAN);
             paramsBuffer.putShort((short) this.elementAddress);
@@ -167,9 +166,9 @@ public class ConfigModelPublicationSet extends ConfigMessage {
             paramsBuffer.put(modelIdentifier[0]);
             paramsBuffer.put(modelIdentifier[3]);
             paramsBuffer.put(modelIdentifier[2]);
-            mParameters = paramsBuffer.array();
         }
-        Log.v(TAG, "Publication set: " + MeshParserUtils.bytesToHex(mParameters, false));
+        mParameters = paramsBuffer.array();
+        MeshLogger.verbose(TAG, "Publication set: " + MeshParserUtils.bytesToHex(mParameters, false));
     }
 
     /**

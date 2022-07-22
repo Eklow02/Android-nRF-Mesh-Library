@@ -39,7 +39,6 @@ abstract class UnprovisionedBaseMeshNode implements Parcelable {
 
     protected static final String TAG = UnprovisionedBaseMeshNode.class.getSimpleName();
 
-    private int mConfigurationSrc;
     protected byte[] ivIndex;
     boolean isProvisioned;
     boolean isConfigured;
@@ -58,19 +57,19 @@ abstract class UnprovisionedBaseMeshNode implements Parcelable {
     protected int unicastAddress;
     byte[] deviceKey;
     protected int ttl = 5;
-    private String bluetoothDeviceAddress;
     long mTimeStampInMillis;
     ProvisioningCapabilities provisioningCapabilities;
     int numberOfElements;
     UUID deviceUuid;
     byte[] provisioningInvitePdu;
-    //capabilties pdu received by the provisioner
+    //capabilities pdu received by the provisioner
     byte[] provisioningCapabilitiesPdu;
     //provisioning start pdu sent by the provisioner
     byte[] provisioningStartPdu;
     AuthenticationOOBMethods authMethodUsed = AuthenticationOOBMethods.NO_OOB_AUTHENTICATION;
     short authActionUsed;
     byte[] inputAuthentication;
+    boolean secure = false;
 
     UnprovisionedBaseMeshNode(final UUID uuid) {
         deviceUuid = uuid;
@@ -118,6 +117,7 @@ abstract class UnprovisionedBaseMeshNode implements Parcelable {
         return ttl;
     }
 
+    @SuppressWarnings("unused")
     public final byte[] getIdentityKey() {
         return identityKey;
     }
@@ -152,14 +152,6 @@ abstract class UnprovisionedBaseMeshNode implements Parcelable {
 
     public long getTimeStamp() {
         return mTimeStampInMillis;
-    }
-
-    public final int getConfigurationSrc() {
-        return mConfigurationSrc;
-    }
-
-    public final void setConfigurationSrc(final int src) {
-        mConfigurationSrc = src;
     }
 
     public ProvisioningCapabilities getProvisioningCapabilities() {
@@ -248,5 +240,13 @@ abstract class UnprovisionedBaseMeshNode implements Parcelable {
      */
     void setInputAuthentication(final byte[] inputAuthentication) {
         this.inputAuthentication = inputAuthentication;
+    }
+
+    void setSecure(final boolean secure){
+        this.secure = secure;
+    }
+
+    public boolean isSecure(){
+        return secure;
     }
 }

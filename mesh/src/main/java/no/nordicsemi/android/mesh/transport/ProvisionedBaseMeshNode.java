@@ -254,6 +254,10 @@ abstract class ProvisionedBaseMeshNode implements Parcelable {
         return security;
     }
 
+    public boolean isSecurelyProvisioned() {
+        return security == HIGH;
+    }
+
     /**
      * Set security state of the node {@link SecurityState}
      */
@@ -263,6 +267,31 @@ abstract class ProvisionedBaseMeshNode implements Parcelable {
     }
 
     /**
+<<<<<<< HEAD
+     * Returns true if the node is blacklisted or false otherwise
+     *
+     * @deprecated Use {@link #isExcluded()} instead
+     */
+    @Deprecated
+    public boolean isBlackListed() {
+        return isExcluded();
+    }
+
+    /**
+     * Blacklist a node.
+     *
+     * @param blackListed true if blacklisted
+     * @deprecated Use {@link #setExcluded(boolean)} instead
+     */
+    @Deprecated
+    @RestrictTo(RestrictTo.Scope.LIBRARY)
+    public void setBlackListed(final boolean blackListed) {
+        setExcluded(blackListed);
+    }
+
+    /**
+=======
+>>>>>>> master-nordic
      * Returns the {@link SecureNetworkBeacon} beacon of this node
      */
     public Boolean isSecureNetworkBeaconSupported() {

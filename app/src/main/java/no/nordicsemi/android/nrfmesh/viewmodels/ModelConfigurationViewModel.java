@@ -27,6 +27,7 @@ import javax.inject.Inject;
 import androidx.annotation.NonNull;
 import dagger.hilt.android.lifecycle.HiltViewModel;
 import no.nordicsemi.android.mesh.ApplicationKey;
+import no.nordicsemi.android.mesh.NetworkKey;
 import no.nordicsemi.android.mesh.models.SigModelParser;
 import no.nordicsemi.android.mesh.transport.ConfigBeaconGet;
 import no.nordicsemi.android.mesh.transport.ConfigFriendGet;
@@ -73,6 +74,7 @@ public class ModelConfigurationViewModel extends BaseViewModel {
     }
 
     public void prepareMessageQueue() {
+        final ApplicationKey key = getDefaultApplicationKey();
         switch (getSelectedModel().getValue().getModelId()) {
             case SigModelParser.CONFIGURATION_SERVER:
                 messageQueue.add(new ConfigHeartbeatPublicationGet());
@@ -81,10 +83,15 @@ public class ModelConfigurationViewModel extends BaseViewModel {
                 messageQueue.add(new ConfigNetworkTransmitGet());
                 messageQueue.add(new ConfigBeaconGet());
                 messageQueue.add(new ConfigFriendGet());
-                messageQueue.add(new ConfigNodeIdentityGet());
+                final NetworkKey networkKey = getNetworkLiveData().getMeshNetwork().getPrimaryNetworkKey();
+                if (networkKey != null) {
+                    messageQueue.add(new ConfigNodeIdentityGet(networkKey));
+                }
                 break;
             case SigModelParser.SCENE_SERVER:
-                messageQueue.add(new SceneGet(getDefaultApplicationKey()));
+                if (key != null) {
+                    messageQueue.add(new SceneGet(key));
+                }
                 break;
         }
     }

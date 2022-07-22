@@ -13,6 +13,13 @@ interface LoadNetworkCallbacks {
     void onNetworkLoadedFromDb(final MeshNetwork meshNetwork);
 
     /**
+     * Notifies when the mesh network is created after first start or resetting
+     *
+     * @param meshNetwork {@link MeshNetwork}
+     */
+    void onNetworkCreated(final MeshNetwork meshNetwork);
+
+    /**
      * Notifies when the mesh network fails to load
      *
      * @param error error

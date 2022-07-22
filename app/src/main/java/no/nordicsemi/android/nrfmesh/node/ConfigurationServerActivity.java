@@ -10,6 +10,8 @@ import android.widget.TextView;
 import com.google.android.material.snackbar.Snackbar;
 import com.google.android.material.switchmaterial.SwitchMaterial;
 
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.cardview.widget.CardView;
 import dagger.hilt.android.AndroidEntryPoint;
@@ -24,6 +26,7 @@ import no.nordicsemi.android.mesh.transport.ConfigHeartbeatPublicationGet;
 import no.nordicsemi.android.mesh.transport.ConfigHeartbeatPublicationSet;
 import no.nordicsemi.android.mesh.transport.ConfigHeartbeatPublicationStatus;
 import no.nordicsemi.android.mesh.transport.ConfigHeartbeatSubscriptionGet;
+import no.nordicsemi.android.mesh.transport.ConfigHeartbeatSubscriptionSet;
 import no.nordicsemi.android.mesh.transport.ConfigHeartbeatSubscriptionStatus;
 import no.nordicsemi.android.mesh.transport.ConfigNetworkTransmitSet;
 import no.nordicsemi.android.mesh.transport.ConfigNetworkTransmitStatus;
@@ -43,7 +46,6 @@ import no.nordicsemi.android.nrfmesh.R;
 import no.nordicsemi.android.nrfmesh.databinding.LayoutConfigServerModelBinding;
 import no.nordicsemi.android.nrfmesh.node.dialog.DialogFragmentNetworkTransmitSettings;
 import no.nordicsemi.android.nrfmesh.node.dialog.DialogRelayRetransmitSettings;
-import no.nordicsemi.android.nrfmesh.utils.Utils;
 import no.nordicsemi.android.nrfmesh.viewmodels.ModelConfigurationViewModel;
 
 import static android.view.View.GONE;
@@ -98,9 +100,12 @@ public class ConfigurationServerActivity extends BaseModelConfigurationActivity 
 
     private int mRelayRetransmitCount = RELAY_RETRANSMIT_SETTINGS_UNKNOWN;
     private int mRelayRetransmitIntervalSteps = RELAY_RETRANSMIT_SETTINGS_UNKNOWN;
-    private int mNetworkTransmitCount = NETWORK_TRANSMIT_SETTING_UNKNOWN;
-    private int mNetworkTransmitIntervalSteps = NETWORK_TRANSMIT_SETTING_UNKNOWN;
-
+    private final ActivityResultLauncher<Intent> heartbeatConfigurationLauncher = registerForActivityResult(
+            new ActivityResultContracts.StartActivityForResult(), result -> {
+                if (result.getResultCode() == RESULT_OK && result.getData() != null) {
+                    showProgressBar();
+                }
+            });
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -163,22 +168,16 @@ public class ConfigurationServerActivity extends BaseModelConfigurationActivity 
                     sendMessage(new ConfigHeartbeatPublicationSet()));
 
             mSetPublication = nodeControlsContainerBinding.actionSetHeartbeatPublication;
-            mSetPublication.setOnClickListener(v -> {
-                final Intent heartbeatPublication = new Intent(this, HeartbeatPublicationActivity.class);
-                startActivityForResult(heartbeatPublication, Utils.HEARTBEAT_SETTINGS_SET);
-            });
+            mSetPublication.setOnClickListener(v -> heartbeatConfigurationLauncher.launch(new Intent(this, HeartbeatPublicationActivity.class)));
 
             mRefreshSubscription = nodeControlsContainerBinding.actionRefreshHeartbeatSubscription;
             mRefreshSubscription.setOnClickListener(v -> sendMessage(new ConfigHeartbeatSubscriptionGet()));
 
             mClearSubscription = nodeControlsContainerBinding.actionClearHeartbeatSubscription;
-            mClearSubscription.setOnClickListener(v -> sendMessage(new ConfigHeartbeatPublicationSet()));
+            mClearSubscription.setOnClickListener(v -> sendMessage(new ConfigHeartbeatSubscriptionSet()));
 
             mSetSubscription = nodeControlsContainerBinding.actionSetHeartbeatSubscription;
-            mSetSubscription.setOnClickListener(v -> {
-                final Intent subscription = new Intent(this, HeartbeatSubscriptionActivity.class);
-                startActivityForResult(subscription, Utils.HEARTBEAT_SETTINGS_SET);
-            });
+            mSetSubscription.setOnClickListener(v -> heartbeatConfigurationLauncher.launch(new Intent(this, HeartbeatSubscriptionActivity.class)));
 
             mNetworkTransmitCountText = nodeControlsContainerBinding.networkTransmitCount;
             mNetworkTransmitIntervalStepsText = nodeControlsContainerBinding.networkTransmitIntervalSteps;
@@ -186,12 +185,16 @@ public class ConfigurationServerActivity extends BaseModelConfigurationActivity 
             mSetNetworkTransmitStateButton = nodeControlsContainerBinding.actionNetworkTransmitConfigure;
             mSetNetworkTransmitStateButton.setOnClickListener(v -> {
                 if (!checkConnectivity(mContainer)) return;
+
+                int transmissionsCount = NetworkTransmitSettings.MIN_TRANSMIT_COUNT;
+                int transmissionIntervalSteps = NetworkTransmitSettings.MIN_TRANSMISSION_INTERVAL;
+
                 if (meshNode != null && meshNode.getNetworkTransmitSettings() != null) {
-                    mNetworkTransmitCount = meshNode.getNetworkTransmitSettings().getNetworkTransmitCount();
-                    mNetworkTransmitIntervalSteps = meshNode.getNetworkTransmitSettings().getNetworkIntervalSteps();
+                    transmissionsCount = meshNode.getNetworkTransmitSettings().getNetworkTransmitCount();
+                    transmissionIntervalSteps = meshNode.getNetworkTransmitSettings().getNetworkIntervalSteps();
                 }
 
-                final DialogFragmentNetworkTransmitSettings fragment = DialogFragmentNetworkTransmitSettings.newInstance(mNetworkTransmitCount, mNetworkTransmitIntervalSteps);
+                final DialogFragmentNetworkTransmitSettings fragment = DialogFragmentNetworkTransmitSettings.newInstance(transmissionsCount, transmissionIntervalSteps);
                 fragment.show(getSupportFragmentManager(), null);
             });
 
@@ -262,7 +265,7 @@ public class ConfigurationServerActivity extends BaseModelConfigurationActivity 
             mViewModel.displaySnackBar(this, mContainer,
                     getString(R.string.listing_model_configuration), Snackbar.LENGTH_LONG);
             ((ModelConfigurationViewModel) mViewModel).prepareMessageQueue();
-            sendMessage(node.getUnicastAddress(), mViewModel.getMessageQueue().peek());
+            sendAcknowledgedMessage(node.getUnicastAddress(), mViewModel.getMessageQueue().peek());
         } else {
             mSwipe.setRefreshing(false);
         }
@@ -378,7 +381,7 @@ public class ConfigurationServerActivity extends BaseModelConfigurationActivity 
         try {
             if (node != null) {
                 final ConfigRelaySet message = new ConfigRelaySet(relay, relayRetransmit, relayRetransmitIntervalSteps);
-                sendMessage(node.getUnicastAddress(), message);
+                sendAcknowledgedMessage(node.getUnicastAddress(), message);
             }
         } catch (Exception e) {
             hideProgressBar();
@@ -391,7 +394,7 @@ public class ConfigurationServerActivity extends BaseModelConfigurationActivity 
         try {
             if (node != null) {
                 final ConfigNetworkTransmitSet message = new ConfigNetworkTransmitSet(networkTransmitCount, networkTransmitIntervalSteps);
-                sendMessage(node.getUnicastAddress(), message);
+                sendAcknowledgedMessage(node.getUnicastAddress(), message);
             }
         } catch (Exception e) {
             hideProgressBar();
@@ -419,8 +422,8 @@ public class ConfigurationServerActivity extends BaseModelConfigurationActivity 
         if (networkTransmitSettings != null) {
             mSetNetworkTransmitStateButton.setEnabled(true);
             mNetworkTransmitCountText.setText(getResources().getQuantityString(R.plurals.transmit_count,
-                    networkTransmitSettings.getTransmissionCount(),
-                    networkTransmitSettings.getTransmissionCount()));
+                    networkTransmitSettings.getTransmissions(),
+                    networkTransmitSettings.getTransmissions()));
             mNetworkTransmitIntervalStepsText.setText(getString(R.string.time_ms,
                     networkTransmitSettings.getNetworkTransmissionInterval()));
         } else {

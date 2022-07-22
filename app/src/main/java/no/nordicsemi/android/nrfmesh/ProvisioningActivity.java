@@ -32,7 +32,10 @@ import com.google.android.material.snackbar.Snackbar;
 
 import java.util.Locale;
 
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
 import androidx.lifecycle.ViewModelProvider;
@@ -66,8 +69,10 @@ import no.nordicsemi.android.nrfmesh.viewmodels.ProvisionerProgress;
 import no.nordicsemi.android.nrfmesh.viewmodels.ProvisioningViewModel;
 
 import static no.nordicsemi.android.nrfmesh.utils.Utils.RESULT_KEY;
+
 @AndroidEntryPoint
 public class ProvisioningActivity extends AppCompatActivity implements
+        DialogFragmentOobPublicKey.DialogFragmentOobPublicKeysListener,
         DialogFragmentSelectOOBType.DialogFragmentSelectOOBTypeListener,
         DialogFragmentAuthenticationInput.ProvisionerInputFragmentListener,
         DialogFragmentNodeName.DialogFragmentNodeNameListener,
@@ -82,6 +87,15 @@ public class ProvisioningActivity extends AppCompatActivity implements
     private ActivityMeshProvisionerBinding binding;
     private ProvisioningViewModel mViewModel;
 
+    private final ActivityResultLauncher<Intent> appKeySelector = registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), result -> {
+        if (result.getResultCode() == RESULT_OK && result.getData() != null) {
+            final ApplicationKey appKey = result.getData().getParcelableExtra(RESULT_KEY);
+            if (appKey != null) {
+                mViewModel.getNetworkLiveData().setSelectedAppKey(appKey);
+            }
+        }
+    });
+
     @Override
     protected void onCreate(final Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -91,15 +105,19 @@ public class ProvisioningActivity extends AppCompatActivity implements
 
         final Intent intent = getIntent();
         final ExtendedBluetoothDevice device = intent.getParcelableExtra(Utils.EXTRA_DEVICE);
-        final String deviceName = device.getName();
-        final String deviceAddress = device.getAddress();
+        if (device == null)
+            finish();
+        final String deviceName = device != null ? device.getName() : getString(R.string.unknown_device);
+        final String deviceAddress = device != null ? device.getName() : getString(R.string.unicast_address);
 
         setSupportActionBar(binding.toolbar);
-        getSupportActionBar().setTitle(deviceName);
-        getSupportActionBar().setSubtitle(deviceAddress);
-        getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+        if (getSupportActionBar() != null) {
+            getSupportActionBar().setTitle(deviceName);
+            getSupportActionBar().setSubtitle(deviceAddress);
+            getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+        }
 
-        if (savedInstanceState == null)
+        if (savedInstanceState == null && device != null)
             mViewModel.connect(this, device, false);
 
         binding.containerName.image
@@ -132,7 +150,7 @@ public class ProvisioningActivity extends AppCompatActivity implements
         binding.containerAppKeys.getRoot().setOnClickListener(v -> {
             final Intent manageAppKeys = new Intent(ProvisioningActivity.this, AppKeysActivity.class);
             manageAppKeys.putExtra(Utils.EXTRA_DATA, Utils.ADD_APP_KEY);
-            startActivityForResult(manageAppKeys, Utils.SELECT_KEY);
+            appKeySelector.launch(manageAppKeys);
         });
 
         mViewModel.getConnectionState().observe(this, binding.connectionState::setText);
@@ -202,7 +220,7 @@ public class ProvisioningActivity extends AppCompatActivity implements
                             updateCapabilitiesUi(capabilities);
                         } catch (IllegalArgumentException ex) {
                             binding.actionProvisionDevice.setEnabled(false);
-                            mViewModel.displaySnackBar(this, binding.coordinator, ex.getMessage(), Snackbar.LENGTH_LONG);
+                            mViewModel.displaySnackBar(this, binding.coordinator, ex.getMessage() == null ? getString(R.string.unknwon_error) : ex.getMessage(), Snackbar.LENGTH_LONG);
                         }
                     }
                 }
@@ -218,12 +236,16 @@ public class ProvisioningActivity extends AppCompatActivity implements
             }
 
             if (node.getProvisioningCapabilities() != null) {
-                if (node.getProvisioningCapabilities().getAvailableOOBTypes().size() == 1 &&
-                        node.getProvisioningCapabilities().getAvailableOOBTypes().get(0) == AuthenticationOOBMethods.NO_OOB_AUTHENTICATION) {
-                    onNoOOBSelected();
+                if (node.getProvisioningCapabilities().isPublicKeyOobSupported()) {
+                    DialogFragmentOobPublicKey.newInstance().show(getSupportFragmentManager(), null);
                 } else {
-                    final DialogFragmentSelectOOBType fragmentSelectOOBType = DialogFragmentSelectOOBType.newInstance(node.getProvisioningCapabilities());
-                    fragmentSelectOOBType.show(getSupportFragmentManager(), null);
+                    if (node.getProvisioningCapabilities().getAvailableOOBTypes().size() == 1 &&
+                            node.getProvisioningCapabilities().getAvailableOOBTypes().get(0) == AuthenticationOOBMethods.NO_OOB_AUTHENTICATION) {
+                        onNoOOBSelected();
+                    } else {
+                        final DialogFragmentSelectOOBType fragmentSelectOOBType = DialogFragmentSelectOOBType.newInstance(node.getProvisioningCapabilities());
+                        fragmentSelectOOBType.show(getSupportFragmentManager(), null);
+                    }
                 }
             }
         });
@@ -251,19 +273,6 @@ public class ProvisioningActivity extends AppCompatActivity implements
     @Override
     protected void onDestroy() {
         super.onDestroy();
-    }
-
-    @Override
-    protected void onActivityResult(final int requestCode, final int resultCode, final Intent data) {
-        super.onActivityResult(requestCode, resultCode, data);
-        if (requestCode == Utils.SELECT_KEY) {
-            if (resultCode == RESULT_OK) {
-                final ApplicationKey appKey = data.getParcelableExtra(RESULT_KEY);
-                if (appKey != null) {
-                    mViewModel.getNetworkLiveData().setSelectedAppKey(appKey);
-                }
-            }
-        }
     }
 
     @Override
@@ -335,19 +344,7 @@ public class ProvisioningActivity extends AppCompatActivity implements
                             }
                             break;
                         case PROVISIONING_AUTHENTICATION_STATIC_OOB_WAITING:
-                            if (getSupportFragmentManager().findFragmentByTag(DIALOG_FRAGMENT_AUTH_INPUT_TAG) == null) {
-                                DialogFragmentAuthenticationInput dialogFragmentAuthenticationInput = DialogFragmentAuthenticationInput.
-                                        newInstance(mViewModel.getUnprovisionedMeshNode().getValue());
-                                dialogFragmentAuthenticationInput.show(getSupportFragmentManager(), DIALOG_FRAGMENT_AUTH_INPUT_TAG);
-                            }
-                            break;
                         case PROVISIONING_AUTHENTICATION_OUTPUT_OOB_WAITING:
-                            if (getSupportFragmentManager().findFragmentByTag(DIALOG_FRAGMENT_AUTH_INPUT_TAG) == null) {
-                                DialogFragmentAuthenticationInput dialogFragmentAuthenticationInput = DialogFragmentAuthenticationInput.
-                                        newInstance(mViewModel.getUnprovisionedMeshNode().getValue());
-                                dialogFragmentAuthenticationInput.show(getSupportFragmentManager(), DIALOG_FRAGMENT_AUTH_INPUT_TAG);
-                            }
-                            break;
                         case PROVISIONING_AUTHENTICATION_INPUT_OOB_WAITING:
                             if (getSupportFragmentManager().findFragmentByTag(DIALOG_FRAGMENT_AUTH_INPUT_TAG) == null) {
                                 DialogFragmentAuthenticationInput dialogFragmentAuthenticationInput = DialogFragmentAuthenticationInput.
@@ -432,6 +429,21 @@ public class ProvisioningActivity extends AppCompatActivity implements
     }
 
     @Override
+    public void onPublicKeyAdded(@Nullable final byte[] publicKey) {
+        final UnprovisionedMeshNode node = mViewModel.getUnprovisionedMeshNode().getValue();
+        if (node != null) {
+            node.setProvisioneePublicKeyXY(publicKey);
+            if (node.getProvisioningCapabilities().getAvailableOOBTypes().size() == 1 &&
+                    node.getProvisioningCapabilities().getAvailableOOBTypes().get(0) == AuthenticationOOBMethods.NO_OOB_AUTHENTICATION) {
+                onNoOOBSelected();
+            } else {
+                final DialogFragmentSelectOOBType fragmentSelectOOBType = DialogFragmentSelectOOBType.newInstance(node.getProvisioningCapabilities());
+                fragmentSelectOOBType.show(getSupportFragmentManager(), null);
+            }
+        }
+    }
+
+    @Override
     public void onNoOOBSelected() {
         final UnprovisionedMeshNode node = mViewModel.getUnprovisionedMeshNode().getValue();
         if (node != null) {
@@ -441,7 +453,7 @@ public class ProvisioningActivity extends AppCompatActivity implements
                 binding.provisioningProgressBar.setVisibility(View.VISIBLE);
                 mViewModel.getMeshManagerApi().startProvisioning(node);
             } catch (IllegalArgumentException ex) {
-                mViewModel.displaySnackBar(this, binding.coordinator, ex.getMessage(), Snackbar.LENGTH_LONG);
+                mViewModel.displaySnackBar(this, binding.coordinator, ex.getMessage() == null ? getString(R.string.unknwon_error) : ex.getMessage(), Snackbar.LENGTH_LONG);
             }
         }
     }
@@ -456,7 +468,7 @@ public class ProvisioningActivity extends AppCompatActivity implements
                 binding.provisioningProgressBar.setVisibility(View.VISIBLE);
                 mViewModel.getMeshManagerApi().startProvisioningWithStaticOOB(node);
             } catch (IllegalArgumentException ex) {
-                mViewModel.displaySnackBar(this, binding.coordinator, ex.getMessage(), Snackbar.LENGTH_LONG);
+                mViewModel.displaySnackBar(this, binding.coordinator, ex.getMessage() == null ? getString(R.string.unknwon_error) : ex.getMessage(), Snackbar.LENGTH_LONG);
             }
         }
     }
@@ -471,7 +483,7 @@ public class ProvisioningActivity extends AppCompatActivity implements
                 binding.provisioningProgressBar.setVisibility(View.VISIBLE);
                 mViewModel.getMeshManagerApi().startProvisioningWithOutputOOB(node, action);
             } catch (IllegalArgumentException ex) {
-                mViewModel.displaySnackBar(this, binding.coordinator, ex.getMessage(), Snackbar.LENGTH_LONG);
+                mViewModel.displaySnackBar(this, binding.coordinator, ex.getMessage() == null ? getString(R.string.unknwon_error) : ex.getMessage(), Snackbar.LENGTH_LONG);
             }
         }
     }
@@ -486,7 +498,7 @@ public class ProvisioningActivity extends AppCompatActivity implements
                 binding.provisioningProgressBar.setVisibility(View.VISIBLE);
                 mViewModel.getMeshManagerApi().startProvisioningWithInputOOB(node, action);
             } catch (IllegalArgumentException ex) {
-                mViewModel.displaySnackBar(this, binding.coordinator, ex.getMessage(), Snackbar.LENGTH_LONG);
+                mViewModel.displaySnackBar(this, binding.coordinator, ex.getMessage() == null ? getString(R.string.unknwon_error) : ex.getMessage(), Snackbar.LENGTH_LONG);
             }
         }
     }

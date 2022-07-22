@@ -1,10 +1,11 @@
 package no.nordicsemi.android.mesh;
 
+import android.annotation.SuppressLint;
 import android.content.ContentValues;
 import android.content.Context;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
-import android.util.Log;
+import no.nordicsemi.android.mesh.logger.MeshLogger;
 import android.util.SparseIntArray;
 
 import java.util.ArrayList;
@@ -42,6 +43,7 @@ import no.nordicsemi.android.mesh.transport.ProvisionedMeshNode;
 import no.nordicsemi.android.mesh.utils.MeshAddress;
 import no.nordicsemi.android.mesh.utils.MeshParserUtils;
 
+@SuppressLint("Range")
 @RestrictTo(RestrictTo.Scope.LIBRARY)
 @Database(entities = {
         MeshNetwork.class,
@@ -140,24 +142,24 @@ abstract class MeshNetworkDb extends RoomDatabase {
                        @NonNull final ProvisionedMeshNodesDao nodesDao,
                        @NonNull final GroupsDao groupsDao,
                        @NonNull final ScenesDao scenesDao,
-                       @NonNull final MeshNetwork meshNetwork) {
+                       @NonNull final MeshNetwork meshNetwork,
+                       @NonNull final LoadNetworkCallbacks listener) {
         databaseWriteExecutor.execute(() -> {
 
             meshNetworkDao.insert(meshNetwork);
-            netKeysDao.insert(meshNetwork.netKeys);
-            appKeysDao.insert(meshNetwork.appKeys);
-            provisionersDao.insert(meshNetwork.provisioners);
+            netKeysDao.insert(new ArrayList<>(meshNetwork.netKeys));
+            appKeysDao.insert(new ArrayList<>(meshNetwork.appKeys));
+            provisionersDao.insert(new ArrayList<>(meshNetwork.provisioners));
             if (!meshNetwork.nodes.isEmpty()) {
-                nodesDao.insert(meshNetwork.nodes);
+                nodesDao.insert(new ArrayList<>(meshNetwork.nodes));
             }
-
             if (meshNetwork.groups != null) {
-                groupsDao.insert(meshNetwork.groups);
+                groupsDao.insert(new ArrayList<>(meshNetwork.groups));
             }
-
             if (meshNetwork.scenes != null) {
-                scenesDao.insert(meshNetwork.scenes);
+                scenesDao.insert(new ArrayList<>(meshNetwork.scenes));
             }
+            listener.onNetworkCreated(meshNetwork);
         });
     }
 
@@ -195,7 +197,7 @@ abstract class MeshNetworkDb extends RoomDatabase {
         databaseWriteExecutor.execute(() -> dao.update(network.meshUUID, network.meshName, network.timestamp,
                 network.partial, MeshTypeConverters.ivIndexToJson(network.ivIndex),
                 network.lastSelected,
-                MeshTypeConverters.networkExclusionsToJson(network.networkExclusions)));
+                MeshTypeConverters.networkExclusionsToJson(new HashMap<>(network.getNetworkExclusions()))));
     }
 
     void update(@NonNull final MeshNetworkDao dao, @NonNull final MeshNetwork meshNetwork, final boolean lastSelected) throws ExecutionException, InterruptedException {
@@ -218,13 +220,13 @@ abstract class MeshNetworkDb extends RoomDatabase {
             networkDao.update(network.meshUUID, network.meshName, network.timestamp,
                     network.partial, MeshTypeConverters.ivIndexToJson(network.ivIndex),
                     network.lastSelected,
-                    MeshTypeConverters.networkExclusionsToJson(network.networkExclusions));
-            netKeyDao.update(network.getNetKeys());
-            appKeyDao.update(network.getAppKeys());
-            provisionersDao.update(network.getProvisioners());
-            nodesDao.update(network.getNodes());
-            groupsDao.update(network.getGroups());
-            sceneDao.update(network.getScenes());
+                    MeshTypeConverters.networkExclusionsToJson(new HashMap<>(network.getNetworkExclusions())));
+            netKeyDao.update(new ArrayList<>(network.netKeys));
+            appKeyDao.update(new ArrayList<>(network.appKeys));
+            provisionersDao.update(new ArrayList<>(network.provisioners));
+            nodesDao.update(new ArrayList<>(network.nodes));
+            groupsDao.update(new ArrayList<>(network.groups));
+            sceneDao.update(new ArrayList<>(network.scenes));
         });
     }
 
@@ -298,10 +300,6 @@ abstract class MeshNetworkDb extends RoomDatabase {
 
     void update(@NonNull final GroupDao dao, @NonNull final Group group) {
         databaseWriteExecutor.execute(() -> dao.update(group));
-    }
-
-    void updateGroups(@NonNull final GroupsDao dao, @NonNull final List<Group> groups) {
-        databaseWriteExecutor.execute(() -> dao.update(groups));
     }
 
     void delete(@NonNull final GroupDao dao, @NonNull final Group group) {
@@ -883,7 +881,7 @@ abstract class MeshNetworkDb extends RoomDatabase {
                     values.put("appKeys", MeshTypeConverters.nodeKeysToJson(appKeyIndexes));
                     database.update("nodes", SQLiteDatabase.CONFLICT_REPLACE, values, "uuid = ?", new String[]{uuid});
                 } catch (Exception ex) {
-                    Log.v(TAG, "Something went wrong while migrating data");
+                    MeshLogger.verbose(TAG, "Something went wrong while migrating data");
                 }
             } while (cursor.moveToNext());
             cursor.close();
@@ -914,7 +912,7 @@ abstract class MeshNetworkDb extends RoomDatabase {
                 values.put("mesh_uuid", uuid);
                 values.put("mesh_name", meshName);
                 values.put("timestamp", timestamp);
-                values.put("iv_index", MeshTypeConverters.ivIndexToJson(new IvIndex(ivIndex, ivUpdateState == MeshNetwork.IV_UPDATE_ACTIVE, Calendar.getInstance())));
+                values.put("iv_index", MeshTypeConverters.ivIndexToJson(new IvIndex(ivIndex, ivUpdateState == MeshNetwork.IV_UPDATE_ACTIVE, null)));
                 values.put("sequence_numbers", sequenceNumbers);
                 values.put("last_selected", lastSelected);
                 database.insert("mesh_network_temp", SQLiteDatabase.CONFLICT_REPLACE, values);

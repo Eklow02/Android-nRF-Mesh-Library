@@ -20,5 +20,4 @@ public interface ApplicationKeyDao {
 
     @Delete
     void delete(final ApplicationKey applicationKey);
-
 }

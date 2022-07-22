@@ -23,7 +23,7 @@ package no.nordicsemi.android.mesh.utils;
 
 import android.content.Context;
 import android.text.TextUtils;
-import android.util.Log;
+import no.nordicsemi.android.mesh.logger.MeshLogger;
 import android.util.SparseArray;
 
 import java.nio.ByteBuffer;
@@ -46,6 +46,7 @@ public class MeshParserUtils {
     private static final String TAG = MeshParserUtils.class.getSimpleName();
     private static final SimpleDateFormat SDF = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZZZZZ", Locale.US);
     private static final String PATTERN_KEY = "[0-9a-fA-F]{32}";
+    private static final String PATTERN_PUBLIC_KEY = "[0-9a-fA-F]{128}";
     private static final String PATTERN_UUID_HEX = "[0-9a-fA-F]{32}";
 
     private static final int PROHIBITED_DEFAULT_TTL_STATE_MIN = 0x01;
@@ -264,6 +265,23 @@ public class MeshParserUtils {
         return true;
     }
 
+    /**
+     * Validates the key input
+     *
+     * @param key key
+     * @return true if the Key is a valid value
+     * @throws IllegalArgumentException in case of an invalid was entered as an input and the message containing the error
+     */
+    public static boolean validatePublicKeyInput(@NonNull final String key) throws IllegalArgumentException {
+        if (TextUtils.isEmpty(key)) {
+            throw new IllegalArgumentException("Key cannot be empty!");
+        } else if (!key.matches(PATTERN_PUBLIC_KEY)) {
+            throw new IllegalArgumentException("key must be a 128-character hexadecimal string!");
+        }
+
+        return true;
+    }
+
     public static boolean isValidSequenceNumber(final int sequenceNumber) {
 
         boolean flag = sequenceNumber == (sequenceNumber & 0xFFFFFF);
@@ -340,13 +358,12 @@ public class MeshParserUtils {
     public static int getOpCode(final byte[] accessPayload, final int opCodeCount) {
         switch (opCodeCount) {
             case 1:
-                return accessPayload[0];
+                return unsignedByteToInt(accessPayload[0]);
             case 2:
                 return unsignedBytesToInt(accessPayload[1], accessPayload[0]);
             default:
-                return unsignedByteToInt(accessPayload[1]) << 8
-                        | unsignedByteToInt(accessPayload[0]) << 16
-                        | unsignedByteToInt(accessPayload[2]);
+                // Returns the 6 bit opcode from a 3-octet opcode of a vendor model message
+                return unsignedByteToInt(accessPayload[0]) & 0x3F;
         }
     }
 
@@ -603,11 +620,11 @@ public class MeshParserUtils {
      * @param modelId model identifier
      */
     public static boolean isVendorModel(final int modelId) {
-        return modelId < Short.MIN_VALUE || modelId > Short.MAX_VALUE;
+        return (modelId & 0xFFFF0000) != 0;
     }
 
     public static int getCompanyIdentifier(final int modelId) {
-        if (modelId >= Short.MIN_VALUE && modelId <= Short.MAX_VALUE) {
+        if (!MeshParserUtils.isVendorModel(modelId)) {
             throw new IllegalArgumentException("Not a valid vendor model ID");
         }
         final ByteBuffer buffer = ByteBuffer.allocate(4).order(ByteOrder.BIG_ENDIAN);
@@ -628,7 +645,7 @@ public class MeshParserUtils {
         final Random random = new Random();
         final int bound = (int) Math.pow(10, oobSize) - 1;
         final byte randomByte = (byte) (random.nextInt(bound) + 1);
-        Log.v(TAG, "Random OOB count: " + randomByte);
+        MeshLogger.verbose(TAG, "Random OOB count: " + randomByte);
         return new byte[]{randomByte};
     }
 
@@ -644,7 +661,7 @@ public class MeshParserUtils {
     static byte[] generateOOBNumeric(final int oobSize) {
         final Random random = new Random();
         final int value = random.nextInt((int) Math.pow(10, oobSize));
-        Log.v(TAG, "Random OOB numeric: " + value);
+        MeshLogger.verbose(TAG, "Random OOB numeric: " + value);
         return intToBytes(value);
     }
 
@@ -664,7 +681,7 @@ public class MeshParserUtils {
             final int index = random.nextInt(ALPHANUMERIC.length);
             value[i] = ALPHANUMERIC[index];
         }
-        Log.v(TAG, "Random OOB alpha numeric: " + new String(value));
+        MeshLogger.verbose(TAG, "Random OOB alpha numeric: " + new String(value));
         return value;
     }
 
@@ -750,7 +767,7 @@ public class MeshParserUtils {
      */
     public static long parseTimeStamp(String timestamp) {
         try {
-            if(timestamp.contains("Z")) {
+            if (timestamp.contains("Z")) {
                 timestamp = timestamp.replace("Z", "+00:00");
             }
             final Date date = SDF.parse(timestamp);
