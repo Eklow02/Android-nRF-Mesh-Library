@@ -339,7 +339,7 @@ public class ScheduleEntry {
 
         public static Scene NoScene = new Scene(0);
 
-        public static Scene Address(int address) {
+        public static Scene Number(int address) {
             return new Scene(address);
         }
 

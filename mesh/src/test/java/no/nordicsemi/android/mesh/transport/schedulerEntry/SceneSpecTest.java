@@ -11,6 +11,6 @@ public class SceneSpecTest {
     @Test
     public void scene_should_have_correct_values() {
         assertEquals(0x0000, ScheduleEntry.Scene.NoScene.getValue());
-        assertEquals(0x333, ScheduleEntry.Scene.Address(0x333).getValue());
+        assertEquals(0x333, ScheduleEntry.Scene.Number(0x333).getValue());
     }
 }

@@ -8,16 +8,21 @@ import androidx.annotation.NonNull;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 import no.nordicsemi.android.mesh.data.ScheduleEntry;
 import no.nordicsemi.android.mesh.opcodes.ApplicationMessageOpCodes;
+import no.nordicsemi.android.mesh.utils.ArrayUtils;
+import no.nordicsemi.android.mesh.utils.BitReader;
 import no.nordicsemi.android.mesh.utils.MeshAddress;
 
 public class SchedulerStatus extends ApplicationStatusMessage implements Parcelable {
 
     private static final String TAG = SchedulerStatus.class.getSimpleName();
     private static final int OP_CODE = ApplicationMessageOpCodes.SCHEDULER_STATUS;
-    private int schedules = ScheduleEntry.Action.NoAction.getValue();
+    private List<Integer> schedules = Collections.emptyList();
 
     private static final Creator<SchedulerStatus> CREATOR = new Creator<SchedulerStatus>() {
         @Override
@@ -47,8 +52,12 @@ public class SchedulerStatus extends ApplicationStatusMessage implements Parcela
     @Override
     void parseStatusParameters() {
         MeshLogger.verbose(TAG, "Received scheduler status from: " + MeshAddress.formatAddress(mMessage.getSrc(), true));
-        final ByteBuffer buffer = ByteBuffer.wrap(mParameters).order(ByteOrder.LITTLE_ENDIAN);
-        schedules = buffer.get();
+        final BitReader bitReader = new BitReader(ArrayUtils.reverseArray(mParameters));
+        List<Integer> scheduler = new ArrayList<>();
+        for (int i = 0; i <= 15; i++){
+            scheduler.add(bitReader.getBits(1));
+        }
+        this.schedules = scheduler;
         MeshLogger.verbose(TAG, "Schedules action: " + schedules);
     }
 
@@ -61,7 +70,7 @@ public class SchedulerStatus extends ApplicationStatusMessage implements Parcela
      * Bit field indicating defined Actions in the `Schedule Register`
      * Each bit of the Schedules field set to 1 identifies a corresponding entry of the Schedule Register
      */
-    public int getSchedules() {
+    public List<Integer> getSchedules() {
         return schedules;
     }
 
