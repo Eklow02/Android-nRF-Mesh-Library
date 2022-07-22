@@ -1,7 +1,7 @@
 package no.nordicsemi.android.mesh;
 
 import android.text.TextUtils;
-import android.util.Log;
+import no.nordicsemi.android.mesh.logger.MeshLogger;
 import android.util.SparseIntArray;
 
 import com.google.gson.annotations.Expose;
@@ -86,7 +86,7 @@ abstract class BaseMeshNetwork {
     @TypeConverters(MeshTypeConverters.class)
     @Expose
     @NonNull
-    IvIndex ivIndex = new IvIndex(0, false, Calendar.getInstance());
+    IvIndex ivIndex = new IvIndex(0, false, null);
     //Properties with Ignore are stored in their own table with the network's UUID as the foreign key
     @Ignore
     @SerializedName("netKeys")
@@ -414,7 +414,7 @@ abstract class BaseMeshNetwork {
                 try {
                     return key.clone();
                 } catch (CloneNotSupportedException e) {
-                    Log.e(TAG, "Error while cloning key: " + e.getMessage());
+                    MeshLogger.error(TAG, "Error while cloning key: " + e.getMessage());
                 }
             }
         }
@@ -480,7 +480,7 @@ abstract class BaseMeshNetwork {
                 try {
                     return key.clone();
                 } catch (CloneNotSupportedException e) {
-                    Log.e(TAG, "Error while cloning key: " + e.getMessage());
+                    MeshLogger.error(TAG, "Error while cloning key: " + e.getMessage());
                 }
             }
         }
@@ -1358,10 +1358,6 @@ abstract class BaseMeshNetwork {
      * Returns the map of network exclusions
      */
     public Map<Integer, List<Integer>> getNetworkExclusions() {
-        final Map<Integer, List<Integer>> networkExclusions = new HashMap<>();
-        for (Map.Entry<Integer, List<Integer>> entry : this.networkExclusions.entrySet()) {
-            networkExclusions.put(entry.getKey(), Collections.unmodifiableList(entry.getValue()));
-        }
         return Collections.unmodifiableMap(networkExclusions);
     }
 

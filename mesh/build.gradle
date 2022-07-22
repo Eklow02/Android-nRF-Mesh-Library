@@ -63,6 +63,7 @@ android {
             }
         }
     }
+    namespace 'no.nordicsemi.android.mesh'
 }
 
 dependencies {
